@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carrito - Almacén Don Diego</title>
+    <link rel="shortcut icon" href="imagenes/icon.jpg" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <style>
+        /* === ESTILOS BASE === */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #1e3a8a;
+            --primary-light: #3b82f6;
+            --primary-dark: #1e40af;
+            --secondary: #0b51f5;
+            --accent: #10b981;
+            --bg-light: #f8fafc;
+            --bg-white: #ffffff;
+            --text-dark: #1f2937;
+            --text-gray: #6b7280;
+            --border: #e5e7eb;
+            --shadow: rgba(0, 0, 0, 0.1);
+            --shadow-lg: rgba(0, 0, 0, 0.15);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, var(--bg-light) 0%, #e0e7ff 100%);
+            color: var(--text-dark);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        /* === HEADER === */
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: var(--bg-white);
+            box-shadow: 0 4px 6px -1px var(--shadow);
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--secondary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .logo-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .header-subtitle {
+            font-size: 0.875rem;
+            opacity: 0.9;
+            font-weight: 400;
+        }
+
+        header nav {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .nav-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .nav-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        /* === BANNER === */
+        .novedades-container {
+            background: linear-gradient(90deg, var(--secondary) 0%, #0b51f5 100%);
+            overflow: hidden;
+            padding: 0.75rem 0;
+        }
+
+        .novedades {
+            display: inline-flex;
+            gap: 4rem;
+            animation: scroll 25s linear infinite;
+            white-space: nowrap;
+        }
+
+        .novedades span {
+            color: white;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        @keyframes scroll {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+
+        /* === MAIN === */
+        main {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 3rem 1.5rem 5rem;
+        }
+
+        .carrito-contenedor {
+            max-width: 800px;
+            margin: 0 auto;
+            background: var(--bg-white);
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        /* === HEADER CARRITO === */
+        .carrito-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .carrito-header label {
+            font-weight: 600;
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .carrito-header input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .btn-vaciar {
+            background: var(--text-gray);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 0.5rem 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .btn-vaciar:hover {
+            background: #4b5563;
+        }
+
+        /* === PRODUCTO === */
+        .producto {
+            background: var(--bg-light);
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            display: flex;
+            gap: 1rem;
+            align-items: flex-start;
+        }
+
+        .producto-imagen {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 12px;
+            flex-shrink: 0;
+        }
+
+        .producto-info {
+            flex-grow: 1;
+        }
+
+        .producto .nombre {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--text-dark);
+            margin-bottom: 0.25rem;
+        }
+
+        .producto .variante {
+            font-size: 0.875rem;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .producto .descripcion {
+            font-size: 0.875rem;
+            color: var(--text-gray);
+            margin-bottom: 0.5rem;
+        }
+
+        .producto-precio {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .precio-original {
+            text-decoration: line-through;
+            color: var(--text-gray);
+            font-size: 0.875rem;
+        }
+
+        .precio-final {
+            font-weight: 700;
+            color: var(--primary);
+            font-size: 1.1rem;
+        }
+
+        .descuento-tag {
+            background: var(--accent);
+            color: white;
+            padding: 0.125rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .producto-acciones {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 0.75rem;
+        }
+
+        .producto input[type="number"] {
+            width: 70px;
+            padding: 0.5rem;
+            text-align: center;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        .producto-check {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .btn-eliminar {
+            background: var(--danger);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+
+        .btn-eliminar:hover {
+            background: #dc2626;
+        }
+
+        /* === TOTAL === */
+        #total-carrito {
+            text-align: right;
+            font-size: 1.5rem;
+            font-weight: 800;
+            margin-top: 1.5rem;
+            padding: 1.5rem;
+            background: var(--bg-light);
+            border-radius: 16px;
+            color: var(--primary);
+        }
+
+        .resumen-envio {
+            font-size: 1rem;
+            color: var(--text-gray);
+            font-weight: 400;
+            margin-bottom: 0.5rem;
+        }
+
+        .envio-gratis {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        /* === BOTÓN WHATSAPP === */
+        .btn-whatsapp {
+            display: block;
+            width: 100%;
+            background: #25d366;
+            color: white;
+            font-size: 1.125rem;
+            padding: 1rem;
+            border: none;
+            border-radius: 16px;
+            cursor: pointer;
+            margin-top: 1.5rem;
+            text-align: center;
+            font-weight: 700;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
+        }
+
+        .btn-whatsapp:hover:not(:disabled) {
+            background: #1da851;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(37, 211, 102, 0.4);
+        }
+
+        .btn-whatsapp:disabled {
+            background: var(--text-gray);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* === MODAL === */
+        #modal-compra {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            max-width: 500px;
+            width: 95%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            color: var(--primary);
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        .btn-cerrar-modal {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-gray);
+        }
+
+        #modal-contenido {
+            padding: 1.5rem;
+        }
+
+        .productos-resumen {
+            background: var(--bg-light);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .producto-resumen {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .producto-resumen:last-child {
+            border-bottom: none;
+        }
+
+        .resumen-costos {
+            background: #f0f9ff;
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .linea-costo {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+
+        .linea-costo.total {
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: var(--primary);
+            margin-top: 0.5rem;
+            padding-top: 0.5rem;
+            border-top: 2px solid var(--primary-light);
+        }
+
+        .opcion-entrega {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background: var(--bg-light);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .opcion-entrega:hover {
+            background: #e0e7ff;
+        }
+
+        .opcion-entrega input {
+            width: 18px;
+            height: 18px;
+            margin-top: 2px;
+        }
+
+        .opcion-entrega label {
+            flex: 1;
+            cursor: pointer;
+        }
+
+        .opcion-entrega strong {
+            display: block;
+            margin-bottom: 0.25rem;
+        }
+
+        .opcion-entrega small {
+            color: var(--text-gray);
+        }
+
+        #campo-direccion {
+            display: none;
+            margin: 1.5rem 0;
+        }
+
+        #campo-direccion label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        #direccion-entrega {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-family: inherit;
+            resize: vertical;
+        }
+
+        #btn-comprar-whatsapp {
+            width: 100%;
+            padding: 1rem;
+            background: #25d366;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        #btn-comprar-whatsapp:disabled {
+            background: var(--text-gray);
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        #btn-comprar-whatsapp:not(:disabled):hover {
+            background: #128c7e;
+        }
+
+        /* === FOOTER === */
+        footer {
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+            color: white;
+            text-align: center;
+            padding: 2rem;
+            margin-top: 4rem;
+        }
+
+        /* === RESPONSIVE === */
+        @media (max-width: 768px) {
+            body { overflow-x: hidden; }
+            header { flex-direction: column; text-align: center; padding: 1rem; }
+            header nav { flex-wrap: wrap; justify-content: center; gap: 0.5rem; }
+            .nav-btn { padding: 0.5rem 1rem; font-size: 0.8rem; }
+            h1 { font-size: 1.25rem; }
+            .header-subtitle { font-size: 0.75rem; }
+            .logo-icon { width: 28px; height: 28px; }
+            .topbar nav { flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 0 0.5rem; }
+
+            main { padding: 1.5rem 0.75rem 3rem; }
+            .carrito-contenedor { padding: 1rem; border-radius: 14px; }
+            .carrito-header { flex-direction: column; align-items: stretch; gap: 0.5rem; }
+            .carrito-header h2 { font-size: 1.25rem; }
+            .btn-vaciar { width: 100%; }
+
+            .producto { flex-direction: row; padding: 0.75rem; gap: 0.75rem; align-items: center; }
+            .producto-imagen { width: 60px; height: 60px; min-width: 60px; }
+            .producto-info { padding: 0; }
+            .producto .nombre { font-size: 0.9rem; }
+            .producto .descripcion { font-size: 0.75rem; }
+            .producto-precio { font-size: 0.85rem; }
+            .precio-final { font-size: 0.95rem; }
+            .producto-acciones { flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; }
+            .producto input[type="number"] { width: 55px; padding: 0.35rem; font-size: 0.85rem; }
+            .btn-eliminar { padding: 0.35rem 0.65rem; font-size: 0.75rem; }
+            .producto-check { width: 16px; height: 16px; }
+
+            #total-carrito { font-size: 1.15rem; padding: 1rem; text-align: center; }
+            .btn-whatsapp { font-size: 0.95rem; padding: 0.75rem; }
+
+            .modal-content { width: 98%; margin: 0.5rem; border-radius: 12px; }
+            .modal-header { padding: 1rem; }
+            .modal-header h3 { font-size: 1.1rem; }
+            #modal-contenido { padding: 1rem; }
+            .opcion-entrega { padding: 0.75rem; }
+            .opcion-entrega strong { font-size: 0.9rem; }
+            #campo-direccion { margin: 1rem 0; }
+            #btn-comprar-whatsapp { font-size: 0.95rem; padding: 0.75rem; }
+            .productos-resumen { max-height: 150px; }
+            .carrito-vacio { padding: 2rem 1rem; }
+            .carrito-vacio-icon { font-size: 3rem; }
+        }
+
+        @media (max-width: 480px) {
+            header { padding: 0.75rem; }
+            .nav-btn { padding: 0.35rem 0.6rem; font-size: 0.7rem; }
+
+            .producto { flex-direction: column; align-items: stretch; }
+            .producto-imagen { width: 100%; height: 160px; }
+            .producto-acciones { justify-content: space-between; }
+
+            .carrito-contenedor { padding: 0.75rem; }
+            h2 { font-size: 1.3rem; }
+        }
+
+        /* === CARRITO VACÍO === */
+        .carrito-vacio {
+            text-align: center;
+            padding: 4rem 2rem;
+        }
+
+        .carrito-vacio-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+
+        .carrito-vacio h3 {
+            color: var(--text-dark);
+            margin-bottom: 0.5rem;
+        }
+
+        .carrito-vacio p {
+            color: var(--text-gray);
+            margin-bottom: 1.5rem;
+        }
+
+        .btn-seguir {
+            display: inline-block;
+            padding: 0.875rem 1.5rem;
+            background: var(--primary);
+            color: white;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="topbar">
+        <header>
+            <div class="header-brand">
+                <div class="logo-icon">
+                    <img src="imagenes/icon.jpg" alt="Almacen Don Diego Logo">
+                </div>
+                <div>
+                    <h1>Almacén Don Diego</h1>
+                    <div class="header-subtitle">Todo para tu hogar</div>
+                </div>
+            </div>
+            <nav>
+                <a href="index.html" class="nav-btn">
+                    <span>🏠</span>
+                    <span>Inicio</span>
+                </a>
+                <a href="ubicacion.html" class="nav-btn">
+                    <span>📍</span>
+                    <span>Ubicación</span>
+                </a>
+            </nav>
+        </header>
+
+        <div class="novedades-container">
+            <div class="novedades">
+                <span>🛒 Revisa tu carrito</span>
+                <span>📦 Selecciona productos para comprar</span>
+                <span>📲 Confirma tu pedido por WhatsApp</span>
+                <span>🛒 Revisa tu carrito</span>
+                <span>📦 Selecciona productos para comprar</span>
+            </div>
+        </div>
+    </div>
+
+    <main>
+        <div class="carrito-contenedor">
+            <h2>🛒 Tu Carrito</h2>
+
+            <div class="carrito-header">
+                <label>
+                    <input type="checkbox" id="select-todo" onchange="seleccionarTodo(this)">
+                    Seleccionar todo
+                </label>
+                <button class="btn-vaciar" onclick="vaciarCarrito()">🗑️ Vaciar carrito</button>
+            </div>
+
+            <div id="lista-carrito">
+                <!-- Se llena dinámicamente -->
+            </div>
+
+            <div id="total-carrito">
+                <span style="color:gray;">Selecciona productos para ver el total</span>
+            </div>
+
+            <button class="btn-whatsapp" onclick="continuarConCompra()">
+                Continuar con la compra
+            </button>
+        </div>
+    </main>
+
+    <footer>
+        <p>© 2025 Almacen Don Diego - Todos los derechos reservados</p>
+    </footer>
+
+    <!-- Modal de compra -->
+    <div id="modal-compra">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📦 Revisa tu pedido</h3>
+                <button class="btn-cerrar-modal" onclick="cerrarModal()">×</button>
+            </div>
+
+            <div id="modal-contenido">
+                <h4 style="font-weight: 600; color: #1f2937; margin-bottom: 1rem;">Productos:</h4>
+                <div id="productos-seleccionados" class="productos-resumen"></div>
+
+                <div class="resumen-costos">
+                    <div class="linea-costo">
+                        <span>Subtotal:</span>
+                        <strong id="subtotal-valor">$0</strong>
+                    </div>
+                    <div class="linea-costo">
+                        <span>Envío:</span>
+                        <strong id="envio-valor">—</strong>
+                    </div>
+                    <div class="linea-costo total">
+                        <span>Total:</span>
+                        <span id="total-valor">$0</span>
+                    </div>
+                </div>
+
+                <h4 style="font-weight: 600; color: #1f2937; margin-bottom: 1rem;">¿Cómo recibirás tu pedido?</h4>
+                
+                <div class="opcion-entrega" onclick="document.getElementById('entrega-recoger').click()">
+                    <input type="radio" id="entrega-recoger" name="tipo-entrega" value="recoger" onchange="actualizarEntrega()">
+                    <label for="entrega-recoger">
+                        <strong>📍 Recoger en almacén</strong>
+                        <small>Cra. 18 Este #36-19, Villavicencio</small>
+                    </label>
+                </div>
+
+                <div class="opcion-entrega" onclick="document.getElementById('entrega-envio').click()">
+                    <input type="radio" id="entrega-envio" name="tipo-entrega" value="envio" onchange="actualizarEntrega()" checked>
+                    <label for="entrega-envio">
+                        <strong>🚚 Envío a domicilio</strong>
+                        <small>$20.000 • Entrega en 1-2 días</small>
+                    </label>
+                </div>
+
+                <div id="campo-direccion">
+                    <label for="direccion-entrega">Dirección de entrega:</label>
+                    <textarea id="direccion-entrega" rows="3" placeholder="Ej: Calle 123 #45-67, Barrio XYZ, Villavicencio"></textarea>
+                </div>
+
+                <button id="btn-comprar-whatsapp" onclick="enviarWhatsAppFinal()" disabled>
+                    Comprar por WhatsApp
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="js/config.js"></script>
+    <script type="module" src="js/carrito.js"></script>
+    <script>
+        (async () => {
+            const _supabase = window.supabase.createClient(
+                'https://cxbxbazwrngarmnxmbdz.supabase.co',
+                'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4YnhiYXp3cm5nYXJtbnhtYmR6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzODcwMjQsImV4cCI6MjA5Njk2MzAyNH0.PobtXU3aSr27EOpTCcjN22Y--DiEIf01E3Y8e7SENTQ'
+            );
+            const { data } = await _supabase.from('configuracion').select('*').eq('clave', 'footer_year').maybeSingle();
+            if (data) document.querySelector('footer p').textContent = `© ${data.valor} Almacen Don Diego - Todos los derechos reservados`;
+        })();
+    </script>
+</body>
+</html>

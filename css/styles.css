@@ -1,0 +1,159 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: rgba(255, 255, 255, 0.953);
+    margin: 0;
+    padding: 0;
+}
+
+header {
+    background-color: rgb(19, 7, 154); 
+    color: #fcfcfc;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+header h1 {
+    margin: 0;
+}
+
+nav p {
+    display: inline;
+    margin: 0 10px;
+}
+
+nav a {
+    text-decoration: none;
+    color: #ffffff;
+    font-weight: bold;
+    transition: color 0.3s ease;
+}
+
+nav a:hover {
+    color: white;
+}
+
+/* 🔥 Franja de novedades */
+.novedades-container {
+    font-size: 15px;
+    width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+    background-color: rgb(19, 7, 154);
+
+    position: sticky;     /* se queda pegada al hacer scroll */
+    top: 70px;            /* justo debajo del header */
+    left: 0;
+    z-index: 999;
+}
+
+.novedades {
+  display: inline-flex;
+  gap: 120px;
+  animation: moveText 18s linear infinite;
+  padding: 10px;
+  color: white;
+  font-size: 20px;
+}
+
+.novedades span {
+  margin-right: 120px;
+}
+
+/* Animación de desplazamiento */
+@keyframes moveText {
+    0% {transform: translateX(100%);}
+    100% {transform: translateX(-100%);}
+}
+
+/* 🔥 Ajustes del main */
+main {
+    padding: 0 50px 50px;
+    margin-top: 60px;    /* ajustado: header + novedades */
+    margin-bottom: 80px;  /* espacio para no tapar con el footer */
+}
+
+main h2 {
+    margin: 10px 0;
+    font-size: 22px;
+}
+
+/* ---- Productos ---- */
+.contenedor {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 30px;
+}
+
+.item {
+    width: 200px;
+    border: 1px solid #ccc;
+    overflow: hidden;
+    transition: transform 0.3s ease;
+    background-color: white;
+}
+
+.item:hover {
+    transform: scale(1.05);
+}
+
+.item img {
+  width: 190px;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 8px;
+  display: block;
+  margin: 0 auto;
+}
+
+.contenido {
+    padding: 10px;
+    background-color: #f9f9f9;
+    text-align: center;
+}
+.contenido p {
+    margin: 8px 0;
+    font-weight: bold;
+}
+
+.item:hover .contenido {
+    display: block;
+}
+
+.item h2 {
+    text-align: center;
+    font-size: 18px;
+    margin: 10px 0;
+}
+
+/* ---- Botones ---- */
+.btn-agregar {
+    display: block;
+    margin: 10px auto;
+    padding: 8px 12px;
+    background-color: green;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+.btn-agregar:hover {
+    background-color: darkgreen;
+}
+
+/* ---- Footer ---- */
+footer {
+    background-color: rgb(19, 7, 154);
+    color: #ffffff;
+    text-align: center;
+    padding: 10px;
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    z-index: 1000;
+}

@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ubicación - Almacén Don Diego</title>
+  <link rel="shortcut icon" href="imagenes/icon.jpg" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <style>
+    /* === ESTILOS === */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --primary: #1e3a8a;
+      --primary-light: #3b82f6;
+      --primary-dark: #1e40af;
+      --secondary: #0b51f5;
+      --accent: #10b981;
+      --bg-light: #f8fafc;
+      --bg-white: #ffffff;
+      --text-dark: #1f2937;
+      --text-gray: #6b7280;
+      --border: #e5e7eb;
+      --shadow: rgba(0, 0, 0, 0.1);
+      --shadow-lg: rgba(0, 0, 0, 0.15);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, var(--bg-light) 0%, #e0e7ff 100%);
+      color: var(--text-dark);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: var(--bg-white);
+      box-shadow: 0 4px 6px -1px var(--shadow);
+    }
+
+    header {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: white;
+      padding: 1.5rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .logo-icon {
+      width: 32px;
+      height: 32px;
+      background: var(--secondary);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .logo-icon img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+    }
+
+    .header-subtitle {
+      font-size: 0.875rem;
+      opacity: 0.9;
+    }
+
+    header nav {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .nav-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.5rem;
+      background: rgba(255, 255, 255, 0.15);
+      color: white;
+      text-decoration: none;
+      border-radius: 12px;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .nav-btn:hover {
+      background: rgba(255, 255, 255, 0.25);
+      transform: translateY(-2px);
+    }
+
+    .novedades-container {
+      background: linear-gradient(90deg, var(--secondary) 0%, #fb923c 100%);
+      overflow: hidden;
+      padding: 0.75rem 0;
+    }
+
+    .novedades {
+      display: inline-flex;
+      gap: 4rem;
+      animation: scroll 25s linear infinite;
+      white-space: nowrap;
+    }
+
+    .novedades span {
+      color: white;
+      font-weight: 600;
+      font-size: 1rem;
+    }
+
+    @keyframes scroll {
+      0% { transform: translateX(100%); }
+      100% { transform: translateX(-100%); }
+    }
+
+    main {
+      max-width: 800px;
+      margin: 3rem auto 5rem;
+      padding: 0 1.5rem;
+      text-align: center;
+    }
+
+    h2 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: var(--primary);
+      margin-bottom: 1.5rem;
+    }
+
+    .ubicacion img {
+      width: 100%;
+      max-width: 500px;
+      border-radius: 16px;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+    }
+
+    .direccion {
+      font-size: 1.25rem;
+      color: var(--text-dark);
+      margin: 1rem 0;
+      line-height: 1.5;
+    }
+
+    .btn-maps {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.875rem 1.75rem;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      color: white;
+      text-decoration: none;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 10px rgba(30, 58, 138, 0.3);
+    }
+
+    .btn-maps:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(30, 58, 138, 0.4);
+    }
+
+    footer {
+      background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+      color: white;
+      text-align: center;
+      padding: 2rem;
+      margin-top: 3rem;
+    }
+
+    @media (max-width: 768px) {
+      body { overflow-x: hidden; }
+      header {
+        flex-direction: column;
+        text-align: center;
+        padding: 1rem;
+      }
+      header nav { flex-wrap: wrap; justify-content: center; gap: 0.5rem; }
+      .nav-btn { padding: 0.5rem 1rem; font-size: 0.8rem; }
+      h1 { font-size: 1.25rem; }
+      .header-subtitle { font-size: 0.75rem; }
+      h2 { font-size: 1.5rem; }
+      main { padding: 0 1rem; margin: 2rem auto 3rem; }
+      .direccion { font-size: 1rem; }
+      .btn-maps { padding: 0.7rem 1.25rem; font-size: 0.85rem; }
+      .logo-icon { width: 28px; height: 28px; }
+      .topbar nav { flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 0 0.5rem; }
+    }
+
+    @media (max-width: 480px) {
+      header { padding: 0.75rem; }
+      .nav-btn { padding: 0.4rem 0.7rem; font-size: 0.7rem; }
+      h2 { font-size: 1.25rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <header>
+      <div class="header-brand">
+        <div class="logo-icon">
+          <img src="imagenes/icon.jpg" alt="Almacen Don Diego Logo">
+        </div>
+        <div>
+          <h1>Almacén Don Diego</h1>
+          <div class="header-subtitle">Todo para tu hogar</div>
+        </div>
+      </div>
+      <nav>
+        <a href="index.html" class="nav-btn">
+          <span>🏠</span>
+          <span>Inicio</span>
+        </a>
+        <a href="carrito.html" class="nav-btn">
+          <span>🛒</span>
+          <span>Carrito</span>
+        </a>
+      </nav>
+    </header>
+
+    <div class="novedades-container">
+      <div class="novedades">
+        <span>📍 Visítanos en Villavicencio</span>
+        <span>🏠 Cra. 18 Este #36-19</span>
+        <span>🕒 Atendemos de lunes a sábado</span>
+        <span>📍 Visítanos en Villavicencio</span>
+        <span>🏠 Cra. 18 Este #36-19</span>
+      </div>
+    </div>
+  </div>
+
+  <main>
+    <h2>📍 Encuéntranos Aquí</h2>
+    <div class="ubicacion">
+      <img src="imagenes/ubicacion_almacen.jpg" alt="Almacen Don Diego">
+      
+      <p class="direccion">Cra. 18 Este #36-19 Brr. Morichal, Villavicencio, Meta</p>
+
+      <!-- ENLACE CORREGIDO - SIN ESPACIO AL FINAL -->
+      <a class="btn-maps" 
+         href="https://maps.app.goo.gl/BbJqMMVYzsGun4kS8" 
+         target="_blank"
+         rel="noopener noreferrer">
+        Ver en Google Maps
+      </a>
+    </div>
+  </main>
+
+  <footer>
+    <p>© 2025 Almacen Don Diego - Todos los derechos reservados</p>
+  </footer>
+
+  <script>
+    (async () => {
+      const _supabase = window.supabase.createClient(
+        'https://cxbxbazwrngarmnxmbdz.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4YnhiYXp3cm5nYXJtbnhtYmR6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzODcwMjQsImV4cCI6MjA5Njk2MzAyNH0.PobtXU3aSr27EOpTCcjN22Y--DiEIf01E3Y8e7SENTQ'
+      );
+      const { data } = await _supabase.from('configuracion').select('*').eq('clave', 'footer_year').maybeSingle();
+      if (data) document.querySelector('footer p').textContent = `© ${data.valor} Almacen Don Diego - Todos los derechos reservados`;
+    })();
+  </script>
+</body>
+</html>

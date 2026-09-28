@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Almacén Don Diego - Todo para tu hogar</title>
+    <link rel="shortcut icon" href="imagenes/icon.jpg">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <style>
+        /* === VARIABLES === */
+        :root {
+            --primary: #1e3a8a;
+            --primary-light: #3b82f6;
+            --primary-dark: #1e40af;
+            --secondary: #0b51f5;
+            --accent: #10b981;
+            --bg-light: #f8fafc;
+            --bg-white: #ffffff;
+            --text-dark: #1f2937;
+            --text-gray: #6b7280;
+            --border: #e5e7eb;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, var(--bg-light) 0%, #e0e7ff 100%);
+            color: var(--text-dark);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        /* === HEADER === */
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: var(--bg-white);
+            box-shadow: var(--shadow);
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo-icon {
+            width: 50px;
+            height: 50px;
+            background: var(--secondary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .logo-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+        }
+
+        .header-subtitle {
+            font-size: 0.875rem;
+            opacity: 0.9;
+        }
+
+        header nav {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .nav-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+        }
+
+        .nav-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        /* === BANNER NOVEDADES === */
+        .novedades-container {
+            background: linear-gradient(90deg, var(--secondary) 0%, #fb923c 100%);
+            overflow: hidden;
+            padding: 0.75rem 0;
+        }
+
+        .novedades {
+            display: inline-flex;
+            gap: 4rem;
+            animation: scroll 21s linear infinite;
+            white-space: nowrap;
+        }
+
+        .novedades span {
+            color: white;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        @keyframes scroll {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(calc(-100% / 2)); }
+        }
+
+        /* === MAIN === */
+        main {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 3rem 1.5rem 5rem;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .section-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .section-description {
+            font-size: 1.125rem;
+            color: var(--text-gray);
+        }
+
+        /* === FILTROS === */
+        .filtros {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .filtro-btn {
+            padding: 0.5rem 1rem;
+            border: 2px solid var(--border);
+            background: white;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+
+        .filtro-btn:hover, .filtro-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .search-box {
+            padding: 0.75rem 1.5rem;
+            border: 2px solid var(--border);
+            border-radius: 30px;
+            width: 100%;
+            max-width: 400px;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: var(--primary-light);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+
+        /* === GRID PRODUCTOS === */
+        .contenedor {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 2rem;
+        }
+
+        .item {
+            background: var(--bg-white);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .item:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .item-badge {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: var(--secondary);
+            color: white;
+            padding: 0.375rem 0.875rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            z-index: 10;
+        }
+
+        .item-badge.no-disponible {
+            background: var(--text-gray);
+        }
+
+        .item-badge.descuento {
+            background: var(--accent);
+        }
+
+        .item-image-wrapper {
+            position: relative;
+            width: 100%;
+            height: 240px;
+            overflow: hidden;
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+        }
+
+        .item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .item:hover img {
+            transform: scale(1.1);
+        }
+
+        .item-content {
+            padding: 1.5rem;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .item h2 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 0.75rem;
+        }
+
+        .item-description {
+            color: var(--text-gray);
+            font-size: 0.875rem;
+            margin-bottom: 1.25rem;
+            flex-grow: 1;
+        }
+
+        .item-precio {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .item-precio .precio-original {
+            font-size: 1rem;
+            text-decoration: line-through;
+            color: var(--text-gray);
+            font-weight: 400;
+            margin-right: 0.5rem;
+        }
+
+        .item-precio .descuento-tag {
+            font-size: 0.875rem;
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .item-stock {
+            font-size: 0.875rem;
+            color: var(--text-gray);
+            margin-bottom: 1rem;
+        }
+
+        .item-stock.bajo {
+            color: var(--danger);
+            font-weight: 600;
+        }
+
+        .variantes-select {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            font-family: inherit;
+        }
+
+        .btn-agregar {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            width: 100%;
+            padding: 0.875rem 1.5rem;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.9375rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-agregar:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(30, 58, 138, 0.4);
+        }
+
+        .btn-agregar:disabled {
+            background: var(--text-gray);
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        /* === LOADING === */
+        .loading-container {
+            text-align: center;
+            padding: 4rem;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* === FOOTER === */
+        footer {
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+            color: white;
+            text-align: center;
+            padding: 2rem;
+            margin-top: 4rem;
+        }
+
+        /* === BOTÓN SOPORTE === */
+        .soporte-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--primary);
+            box-shadow: 0 4px 12px rgba(30, 58, 138, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 2000;
+            transition: transform 0.2s;
+            overflow: hidden;
+        }
+
+        .soporte-btn:hover {
+            transform: scale(1.08);
+        }
+
+        .soporte-btn img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* === MODAL SOPORTE === */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 3000;
+            
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-contenido {
+            background: white;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 400px;
+            padding: 24px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .modal-header h3 {
+            color: var(--primary);
+            font-size: 1.375rem;
+        }
+
+        .btn-cerrar {
+            background: none;
+            border: none;
+            font-size: 1.75rem;
+            color: var(--text-gray);
+            cursor: pointer;
+        }
+
+        .modal-contenido textarea {
+            width: 100%;
+            height: 120px;
+            padding: 14px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            font-family: inherit;
+            resize: vertical;
+            margin-bottom: 16px;
+        }
+
+        .btn-enviar {
+            width: 100%;
+            padding: 14px;
+            background: #25d366;
+            color: white;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-enviar:hover {
+            background: #128c7e;
+        }
+
+/* === RESPONSIVE === */
+@media (max-width: 768px) {
+    body { overflow-x: hidden; }
+    header {
+        flex-direction: column;
+        text-align: center;
+        padding: 1rem;
+    }
+    h1 { font-size: 1.25rem; }
+    .header-subtitle { font-size: 0.75rem; }
+    header nav { flex-wrap: wrap; justify-content: center; gap: 0.5rem; }
+    .nav-btn { padding: 0.5rem 1rem; font-size: 0.8rem; }
+    .section-title { font-size: 1.5rem; }
+    .section-description { font-size: 0.95rem; }
+    main { padding: 1.5rem 1rem 3rem; }
+    .filtros { gap: 0.5rem; }
+    .filtro-btn { font-size: 0.8rem; padding: 0.35rem 0.75rem; }
+    .search-box { max-width: 100%; font-size: 0.9rem; }
+    .contenedor { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1rem; }
+    .item-image-wrapper { height: 160px; }
+    .item-content { padding: 0.75rem; }
+    .item h2 { font-size: 1rem; }
+    .item-precio { font-size: 1.15rem; }
+    .item-description { font-size: 0.8rem; margin-bottom: 0.75rem; }
+    .btn-agregar { padding: 0.6rem 1rem; font-size: 0.8rem; }
+    .soporte-btn { width: 50px; height: 50px; bottom: 15px; right: 15px; }
+    .section-header { margin-bottom: 1.5rem; }
+            .topbar { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+            .topbar nav { flex-wrap: nowrap; justify-content: flex-start; padding: 0 0.5rem; }
+            .logo-icon { width: 40px; height: 40px; }
+        }
+
+@media (max-width: 480px) {
+    .contenedor { grid-template-columns: 1fr; }
+    header { padding: 0.75rem; }
+    .nav-btn { padding: 0.4rem 0.7rem; font-size: 0.7rem; }
+    .filtro-btn { font-size: 0.7rem; padding: 0.3rem 0.6rem; }
+    .item-image-wrapper { height: 200px; }
+    h1 { font-size: 1.1rem; }
+}
+
+        /* === ANIMACIONES === */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .item {
+            animation: fadeInUp 0.6s ease-out backwards;
+        }
+    </style>
+</head>
+<body>
+    <div class="topbar">
+        <header>
+            <div class="header-brand">
+                <div class="logo-icon">
+                    <img src="imagenes/icon.jpg" alt="Almacen Don Diego Logo">
+                </div>
+                <div>
+                    <h1>Almacén Don Diego</h1>
+                    <div class="header-subtitle">Todo para tu hogar</div>
+                </div>
+            </div>
+            <nav>
+                <a href="carrito.html" class="nav-btn">
+                    <span>🛒</span>
+                    <span>Carrito</span>
+                </a>
+                <a href="ubicacion.html" class="nav-btn">
+                    <span>📍</span>
+                    <span>Ubicación</span>
+                </a>
+                <div id="loginContainer" style="display: flex; align-items: center; gap: 0.75rem;">
+                    <button onclick="loginWithGoogle()" class="nav-btn" id="loginBtn" style="background: rgba(255,255,255,0.3); border: none; font-family: inherit; font-size: inherit;">
+                        <span>🔐</span>
+                        <span id="loginText">Iniciar sesión</span>
+                    </button>
+                    <div id="userProfile" style="display: none; position: relative;">
+                        <div onclick="toggleMenu()" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.25rem 0.5rem; border-radius: 8px; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.15)'" onmouseout="this.style.background='transparent'">
+                            <img id="userAvatar" src="" alt="" style="width: 32px; height: 32px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.5);">
+                            <span id="userName" style="font-weight: 600;"></span>
+                            <span style="font-size: 0.75rem;">▾</span>
+                        </div>
+                        <div id="userMenu" style="display: none; position: absolute; top: 100%; right: 0; margin-top: 0.5rem; background: white; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); min-width: 200px; overflow: hidden; z-index: 1000;">
+                            <div id="menuAdminPanel" style="display: none; padding: 0.75rem 1rem; cursor: pointer; color: var(--primary); font-weight: 600; border-bottom: 1px solid #eee;" onclick="irAlPanel()" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='white'">
+                                📦 Ir al panel admin
+                            </div>
+                            <div style="padding: 0.75rem 1rem; cursor: pointer; color: #ef4444;" onclick="cerrarSesion()" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='white'">
+                                🚪 Cerrar sesión
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+        </header>
+
+        <div class="novedades-container">
+            <div class="novedades">
+                <span>✨ Bienvenido a Almacen Don Diego</span>
+                <span>🏠 Encuentra todo para tu hogar</span>
+                <span>🚚 Envios disponibles</span>
+                <span>💯 Calidad garantizada</span>
+                <span>💰 Aprovecha nuestros descuentos</span>
+                <span>🛒 Compra facil y rapido ⚡️</span>
+                <span>✨ Bienvenido a Almacen Don Diego</span>
+                <span>🏠 Encuentra todo para tu hogar</span>
+                <span>🚚 Envios disponibles</span>
+                <span>💯 Calidad garantizada</span>
+                <span>💰 Aprovecha nuestros descuentos</span>
+                <span>🛒 Compra facil y rapido ⚡️</span>
+            </div>
+        </div>
+    </div>
+
+    <main>
+        <div class="section-header">
+            <h2 class="section-title">Nuestros Productos</h2>
+            <p class="section-description">Descubre nuestra amplia selección de productos para el hogar</p>
+        </div>
+
+        <!-- Filtros -->
+        <div class="filtros">
+            <button class="filtro-btn active" onclick="filtrarCategoria('todos')">Todos</button>
+            <div id="filtrosCategorias">
+                <!-- Se llenan dinámicamente -->
+            </div>
+            <input type="text" class="search-box" placeholder="🔍 Buscar productos..." onkeyup="buscarProductos(this.value)">
+        </div>
+
+        <!-- Productos -->
+        <div id="contenedorProductos" class="contenedor">
+            <div class="loading-container">
+                <div class="spinner"></div>
+                <p>Cargando productos...</p>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>© 2025 Almacen Don Diego - Todos los derechos reservados</p>
+    </footer>
+
+    <!-- Botón de soporte -->
+    <div class="soporte-btn" onclick="abrirModalSoporte()">
+        <img src="imagenes/operador.jpg" alt="Soporte">
+    </div>
+
+    <!-- Modal de soporte -->
+    <div id="modalSoporte" class="modal">
+        <div class="modal-contenido">
+            <div class="modal-header">
+                <h3>¿Tienes preguntas?</h3>
+                <button class="btn-cerrar" onclick="cerrarModalSoporte()">×</button>
+            </div>
+            <p>Escríbenos sobre productos aquí listados o sobre otros que necesites.</p>
+            <textarea id="mensajeSoporte" placeholder="Ej: ¿Tienen estufas a gas? ¿Tienen envío al barrio Salitre?"></textarea>
+            <button class="btn-enviar" onclick="enviarWhatsAppSoporte()">Enviar por WhatsApp</button>
+        </div>
+    </div>
+
+    <script type="module" src="js/tienda.js"></script>
+    <script>
+        const _supabase = window.supabase.createClient(
+            'https://cxbxbazwrngarmnxmbdz.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4YnhiYXp3cm5nYXJtbnhtYmR6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzODcwMjQsImV4cCI6MjA5Njk2MzAyNH0.PobtXU3aSr27EOpTCcjN22Y--DiEIf01E3Y8e7SENTQ'
+        );
+
+        let _isAdmin = false;
+
+        window.loginWithGoogle = async function() {
+            const btn = document.getElementById('loginBtn');
+            btn.disabled = true;
+            btn.textContent = '⋯';
+            await _supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: { redirectTo: 'https://almacen-don-diego.pages.dev/index.html' }
+            });
+            btn.disabled = false;
+        };
+
+        window.toggleMenu = function() {
+            const menu = document.getElementById('userMenu');
+            const profile = document.getElementById('userProfile');
+            if (menu.style.display === 'none') {
+                const rect = profile.getBoundingClientRect();
+                menu.style.position = 'fixed';
+                menu.style.top = (rect.bottom + 8) + 'px';
+                menu.style.right = (window.innerWidth - rect.right) + 'px';
+                menu.style.left = 'auto';
+                menu.style.bottom = 'auto';
+                menu.style.zIndex = '9999';
+                menu.style.display = 'block';
+            } else {
+                menu.style.display = 'none';
+            }
+        };
+
+        window.irAlPanel = function() {
+            window.location.href = 'admin.html';
+        };
+
+        window.cerrarSesion = async function() {
+            await _supabase.auth.signOut();
+            window.location.reload();
+        };
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const { data: { session } } = await _supabase.auth.getSession();
+            if (session) {
+                const { data: adminRow } = await _supabase
+                    .from('admins')
+                    .select('email')
+                    .eq('email', session.user.email)
+                    .maybeSingle();
+                _isAdmin = !!adminRow;
+
+                document.getElementById('loginBtn').style.display = 'none';
+                const profile = document.getElementById('userProfile');
+                profile.style.display = 'block';
+                const meta = session.user.user_metadata || {};
+                document.getElementById('userAvatar').src =
+                    meta.avatar_url || meta.picture || 'imagenes/icon.jpg';
+                document.getElementById('userName').textContent =
+                    meta.full_name || meta.name || session.user.email;
+
+                if (_isAdmin) {
+                    document.getElementById('menuAdminPanel').style.display = 'block';
+                }
+            }
+
+            document.addEventListener('click', (e) => {
+                const profile = document.getElementById('userProfile');
+                const menu = document.getElementById('userMenu');
+                if (profile.style.display === 'block' && !profile.contains(e.target)) {
+                    menu.style.display = 'none';
+                }
+            });
+            const { data: cfg } = await _supabase.from('configuracion').select('*').eq('clave', 'footer_year').maybeSingle();
+            if (cfg) document.querySelector('footer p').textContent = `© ${cfg.valor} Almacen Don Diego - Todos los derechos reservados`;
+        });
+    </script>
+</body>
+</html>

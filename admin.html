@@ -1,0 +1,1540 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Admin - Almacén Don Diego</title>
+    <link rel="shortcut icon" href="imagenes/icon.jpg">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #1e3a8a; --primary-light: #3b82f6; --primary-dark: #1e40af;
+            --secondary: #0b51f5; --accent: #10b981; --danger: #ef4444;
+            --warning: #f59e0b; --bg-light: #f8fafc; --bg-white: #ffffff;
+            --text-dark: #1f2937; --text-gray: #6b7280; --border: #e5e7eb;
+            --shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1);
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, var(--bg-light) 0%, #e0e7ff 100%); color: var(--text-dark); line-height: 1.6; min-height: 100vh; overflow-x: hidden; }
+        .login-container { max-width: 400px; margin: 5rem auto; background: white; padding: 2rem; border-radius: 16px; box-shadow: var(--shadow-lg); }
+        .login-container h2 { text-align: center; color: var(--primary); margin-bottom: 1.5rem; }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
+        .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px; font-size: 1rem; font-family: inherit; }
+        .form-group input:focus { outline: none; border-color: var(--primary-light); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+        .form-group textarea { resize: vertical; min-height: 80px; }
+        .btn-primary { width: 100%; padding: 0.875rem; background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); color: white; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+        .btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(30,58,138,0.4); }
+        .btn-primary:disabled { opacity: 0.7; cursor: not-allowed; }
+        .btn-google { width: 100%; padding: 0.875rem; background: white; color: #444; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; justify-content: center; }
+        .btn-google:hover { border-color: #4285F4; box-shadow: 0 2px 8px rgba(66,133,244,0.2); }
+        .error-message { color: var(--danger); text-align: center; margin-top: 1rem; padding: 0.75rem; background: #fee2e2; border-radius: 8px; display: none; }
+        .error-message.show { display: block; }
+        .panel-container { display: none; max-width: 1400px; margin: 0 auto; padding: 2rem; }
+        header { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin: -2rem -2rem 2rem -2rem; border-radius: 0 0 16px 16px; }
+        .header-brand { display: flex; align-items: center; gap: 1rem; }
+        .logo-icon { width: 40px; height: 40px; background: var(--secondary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
+        h1 { font-size: 1.5rem; font-weight: 700; }
+        .header-subtitle { font-size: 0.875rem; opacity: 0.9; }
+        .user-info { display: flex; align-items: center; gap: 1rem; }
+        .btn-logout { background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; transition: all 0.3s; }
+        .btn-logout:hover { background: rgba(255,255,255,0.3); }
+        .tabs { display: flex; gap: 0.5rem; margin-bottom: 2rem; background: white; padding: 0.5rem; border-radius: 12px; box-shadow: var(--shadow); overflow-x: auto; }
+        .tab { padding: 0.75rem 1.5rem; border: none; background: transparent; color: var(--text-gray); font-weight: 500; cursor: pointer; border-radius: 8px; white-space: nowrap; transition: all 0.3s; }
+        .tab:hover { background: var(--bg-light); color: var(--primary); }
+        .tab.active { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); color: white; }
+        .section { display: none; background: white; padding: 2rem; border-radius: 16px; box-shadow: var(--shadow); }
+        .section.active { display: block; }
+        .section h2 { color: var(--primary); margin-bottom: 1.5rem; font-size: 1.5rem; }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+        .image-upload { border: 2px dashed var(--border); border-radius: 12px; padding: 2rem; text-align: center; cursor: pointer; transition: all 0.3s; }
+        .image-upload:hover { border-color: var(--primary-light); background: var(--bg-light); }
+        .image-upload input { display: none; }
+        .image-preview { max-width: 200px; max-height: 200px; margin-top: 1rem; border-radius: 8px; display: none; }
+        .variantes-container { background: var(--bg-light); padding: 1rem; border-radius: 8px; margin-top: 1rem; }
+        .variante-row { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; align-items: center; }
+        .variante-row input { flex: 1; padding: 0.5rem; border: 1px solid var(--border); border-radius: 6px; }
+        .btn-add-variante, .btn-remove-variante { padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem; }
+        .btn-add-variante { background: var(--accent); color: white; }
+        .btn-remove-variante { background: var(--danger); color: white; }
+        .btn-submit { background: linear-gradient(135deg, var(--accent) 0%, #059669 100%); color: white; padding: 1rem 2rem; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+        .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(16,185,129,0.4); }
+        .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 1rem; text-align: left; border-bottom: 1px solid var(--border); }
+        th { background: var(--bg-light); font-weight: 600; color: var(--primary); }
+        .product-img { width: 60px; height: 60px; object-fit: cover; border-radius: 8px; }
+        .badge { padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+        .badge-success { background: #d1fae5; color: #065f46; }
+        .badge-danger { background: #fee2e2; color: #991b1b; }
+        .badge-warning { background: #fef3c7; color: #92400e; }
+        .btn-action { padding: 0.5rem; border: none; border-radius: 6px; cursor: pointer; margin-right: 0.5rem; transition: all 0.3s; }
+        .btn-edit { background: var(--primary-light); color: white; }
+        .btn-delete { background: var(--danger); color: white; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+        .stat-card { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); color: white; padding: 1.5rem; border-radius: 12px; text-align: center; }
+        .stat-card h3 { font-size: 2rem; margin-bottom: 0.5rem; }
+        .stat-card.success { background: linear-gradient(135deg, var(--accent) 0%, #059669 100%); }
+        .stat-card.warning { background: linear-gradient(135deg, var(--warning) 0%, #d97706 100%); }
+        .stat-card.danger { background: linear-gradient(135deg, var(--danger) 0%, #dc2626 100%); }
+        .categorias-list { display: grid; gap: 1rem; }
+        .categoria-item { display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: var(--bg-light); border-radius: 8px; }
+        .categoria-info { display: flex; align-items: center; gap: 1rem; }
+        .categoria-icon { font-size: 1.5rem; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
+        .modal.active { display: flex; }
+        .modal-content { background: white; padding: 2rem; border-radius: 16px; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+        .modal-header h3 { color: var(--primary); }
+        .btn-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-gray); }
+        @media (max-width: 768px) {
+            .panel-container { padding: 0.5rem; }
+            header { margin: -0.5rem -0.5rem 0.75rem -0.5rem; flex-direction: column; text-align: center; padding: 0.75rem; gap: 0.5rem; }
+            .header-brand { justify-content: center; }
+            .user-info { width: 100%; justify-content: center; flex-wrap: wrap; gap: 0.5rem; }
+            h1 { font-size: 1.15rem; }
+            .tabs { gap: 0.25rem; padding: 0.3rem; margin-bottom: 0.75rem; }
+            .tab { padding: 0.4rem 0.6rem; font-size: 0.72rem; }
+            .section { padding: 0.75rem; border-radius: 10px; }
+            .section h2 { font-size: 1.1rem; margin-bottom: 0.75rem; }
+            .form-grid { grid-template-columns: 1fr; gap: 0.5rem; margin-bottom: 0.75rem; }
+            .form-group { margin-bottom: 0.5rem; }
+            .form-group input, .form-group textarea, .form-group select { padding: 0.5rem; font-size: 0.85rem; }
+            .table-container { margin: 0 -0.75rem; padding: 0 0.75rem; }
+            th, td { padding: 0.4rem 0.35rem; font-size: 0.7rem; white-space: nowrap; }
+            th { font-size: 0.65rem; }
+            .product-img { width: 30px; height: 30px; min-width: 30px; }
+            .stats-grid { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+            .stat-card { padding: 0.75rem; }
+            .stat-card h3 { font-size: 1.1rem; }
+            .stat-card p { font-size: 0.75rem; }
+            .modal-content { width: 95%; padding: 1rem; max-height: 85vh; padding-top: 0.75rem; }
+            .modal-header { margin-bottom: 0.75rem; }
+            .categoria-item { flex-direction: column; align-items: flex-start; gap: 0.5rem; padding: 0.75rem; }
+            .categoria-info { width: 100%; }
+            .btn-submit, .btn-primary { width: 100%; text-align: center; padding: 0.65rem 1rem; font-size: 0.85rem; }
+            .btn-logout { width: 100%; padding: 0.4rem 0.75rem; font-size: 0.8rem; }
+            .login-container { margin: 1.5rem auto; padding: 1.25rem; }
+            .image-upload { padding: 1rem; }
+            .variante-row { flex-wrap: wrap; gap: 0.3rem; }
+            .variante-row input { min-width: 100px; font-size: 0.8rem; padding: 0.4rem; }
+            .btn-add-variante, .btn-remove-variante { padding: 0.4rem 0.65rem; font-size: 0.75rem; }
+            .badge { font-size: 0.6rem; padding: 0.15rem 0.4rem; }
+            .btn-action { padding: 0.35rem; font-size: 0.7rem; }
+            .categorias-list { gap: 0.5rem; }
+            .categoria-icon { font-size: 1.1rem; }
+            [id^="previewDescuento"] { font-size: 0.85rem; }
+        }
+
+        @media (max-width: 480px) {
+            .stats-grid { grid-template-columns: 1fr; }
+            .tab { font-size: 0.65rem; padding: 0.3rem 0.45rem; }
+            th, td { padding: 0.3rem 0.25rem; font-size: 0.6rem; }
+            .section { padding: 0.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- LOGIN -->
+    <div id="loginSection" class="login-container" style="text-align: center;">
+        <h2>🔐 Iniciar sesión</h2>
+        <p style="color: var(--text-gray); margin-bottom: 2rem;">
+            Inicia sesión con tu cuenta de Google
+        </p>
+        <button onclick="loginWithGoogle()" class="btn-google" id="loginBtn">
+            <svg width="20" height="20" viewBox="0 0 48 48" style="vertical-align: middle; margin-right: 10px;">
+                <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                <path fill="#FBBC05" d="M10.54 28.59A14.5 14.5 0 0 1 9.5 24c0-1.59.28-3.14.76-4.59l-7.98-6.19A23.99 23.99 0 0 0 0 24c0 3.77.87 7.35 2.56 10.55l7.98-5.96z"/>
+                <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 5.96C6.51 42.62 14.62 48 24 48z"/>
+            </svg>
+            Iniciar sesión con Google
+        </button>
+        <div id="loginError" class="error-message"></div>
+    </div>
+
+    <!-- PANEL PRINCIPAL -->
+    <div id="panelSection" class="panel-container">
+        <header>
+            <div class="header-brand">
+                <div class="logo-icon">🏪</div>
+                <div>
+                    <h1>Almacén Don Diego</h1>
+                    <div class="header-subtitle">Panel de Administración</div>
+                </div>
+            </div>
+            <div class="user-info" style="gap: 0.75rem;">
+                <img id="userAvatar" src="" alt="" style="width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.4); display: none;">
+                <span id="userEmail"></span>
+                <nav>
+                <a href="index.html" style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5rem 1rem; background: rgba(255,255,255,0.2); color: white; text-decoration: none; border-radius: 8px; font-weight: 500; font-size: 0.9rem; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+                    <span>🏠</span>
+                    <span>Inicio</span>
+                </a>
+            </nav>
+                <button class="btn-logout" onclick="logout()">Cerrar sesión</button>
+            </div>
+        </header>
+
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('productos')">📦 Productos</button>
+            <button class="tab" onclick="showTab('agregar')">➕ Agregar Producto</button>
+            <button class="tab" onclick="showTab('categorias')">📁 Categorías</button>
+            <button class="tab" onclick="showTab('pedidos')">🛒 Pedidos</button>
+            <button class="tab" onclick="showTab('estadisticas')">📊 Estadísticas</button>
+            <button class="tab" onclick="showTab('descuentos')">🏷️ Descuentos</button>
+            <button class="tab" onclick="mostrarInputAnio()">📅 Año</button>
+        </div>
+
+        <div id="tab-productos" class="section active">
+            <h2>Gestión de Productos</h2>
+            <div id="lowStockAlert" style="display:none; padding:1rem; border-radius:12px; margin-bottom:1.5rem; font-weight:600;"></div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Imagen</th><th>Nombre</th><th>Categoría</th>
+                            <th>Precio</th><th>Stock</th><th>Descripción</th><th>Estado</th><th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbodyProductos">
+                        <tr><td colspan="8" style="text-align:center;padding:2rem;">Cargando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="tab-agregar" class="section">
+            <h2 id="formTitle">Agregar Nuevo Producto</h2>
+            <form id="productoForm">
+                <input type="hidden" id="productoId">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Nombre del producto *</label>
+                        <input type="text" id="prodNombre" required placeholder="Ej: Soporte TV 32-55">
+                    </div>
+                    <div class="form-group">
+                        <label>Categoría *</label>
+                        <select id="prodCategoria" required>
+                            <option value="">Seleccionar...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Precio (COP) *</label>
+                        <input type="number" id="prodPrecio" required min="0" placeholder="58000">
+                    </div>
+                    <div class="form-group">
+                        <label>Stock disponible *</label>
+                        <input type="number" id="prodStock" required min="0" placeholder="50">
+                    </div>
+                    <div class="form-group">
+                        <label>Descuento (%)</label>
+                        <input type="number" id="prodDescuento" min="0" max="100" placeholder="0" value="0">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Descripción</label>
+                    <textarea id="prodDescripcion" placeholder="Descripción detallada..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Imagen del producto</label>
+                    <div class="image-upload" onclick="document.getElementById('prodImagen').click()">
+                        <input type="file" id="prodImagen" accept="image/*" onchange="previewImage(this)">
+                        <div id="uploadText">
+                            <div style="font-size:2rem;">📷</div>
+                            <p>Click para subir imagen</p>
+                            <small>JPG, PNG, WebP (máx 2MB)</small>
+                        </div>
+                        <img id="imagePreview" class="image-preview">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label><input type="checkbox" id="prodDisponible" checked> Producto disponible</label>
+                </div>
+                <div class="form-group">
+                    <label><input type="checkbox" id="prodDestacado"> Producto destacado</label>
+                </div>
+                <div class="variantes-container">
+                    <label>Variantes (colores, tamaños, etc.)</label>
+                    <div id="variantesList"></div>
+                    <button type="button" class="btn-add-variante" onclick="addVariante()">+ Agregar variante</button>
+                </div>
+                <div style="margin-top:1.5rem;display:flex;gap:1rem;">
+                    <button type="submit" class="btn-submit" id="btnGuardar">💾 Guardar Producto</button>
+                    <button type="button" class="btn-primary" style="background:var(--text-gray);" onclick="resetForm()">Cancelar</button>
+                </div>
+            </form>
+        </div>
+
+        <div id="tab-categorias" class="section">
+            <h2>Gestión de Categorías</h2>
+            <div style="margin-bottom:1.5rem;">
+                <button class="btn-submit" onclick="showModalCategoria()">➕ Nueva Categoría</button>
+            </div>
+            <div id="listaCategorias" class="categorias-list">
+                <p style="text-align:center;color:var(--text-gray);">Cargando categorías...</p>
+            </div>
+        </div>
+
+        <div id="tab-pedidos" class="section">
+            <h2>Pedidos Recibidos</h2>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Fecha</th><th>Cliente</th><th>Productos</th>
+                            <th>Total</th><th>Estado</th><th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbodyPedidos">
+                        <tr><td colspan="6" style="text-align:center;padding:2rem;">No hay pedidos</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="tab-estadisticas" class="section">
+            <h2>📊 Estadísticas de Ventas</h2>
+            <div class="stats-grid">
+                <div class="stat-card"><h3 id="statHoy">$0</h3><p>Ventas Hoy</p></div>
+                <div class="stat-card success"><h3 id="statSemana">$0</h3><p>Esta Semana</p></div>
+                <div class="stat-card warning"><h3 id="statMes">$0</h3><p>Este Mes</p></div>
+                <div class="stat-card danger"><h3 id="statTotal">$0</h3><p>Total Histórico</p></div>
+            </div>
+            <h3 style="margin:2rem 0 1rem;color:var(--primary);">Productos Más Vendidos</h3>
+            <div class="table-container">
+                <table>
+                    <thead><tr><th>Producto</th><th>Cantidad Vendida</th><th>Total Generado</th></tr></thead>
+                    <tbody id="tbodyTopProductos">
+                        <tr><td colspan="3" style="text-align:center;padding:2rem;">No hay datos</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="tab-descuentos" class="section">
+            <h2>🏷️ Gestión de Descuentos</h2>
+
+            <div id="listaDescuentos" style="margin-bottom:2rem;"></div>
+
+            <div style="background:var(--bg-light);padding:1.5rem;border-radius:12px;">
+                <h3 style="color:var(--primary);margin-bottom:1rem;">Nuevo Descuento</h3>
+                <form id="descuentoForm">
+                    <div class="form-group">
+                        <label>Aplicar a:</label>
+                        <div style="display:flex;gap:1.5rem;flex-wrap:wrap;">
+                            <label><input type="radio" name="tipoDescuento" value="producto" checked onchange="toggleTipoDescuento()"> Producto</label>
+                            <label><input type="radio" name="tipoDescuento" value="categoria" onchange="toggleTipoDescuento()"> Categoría</label>
+                        </div>
+                    </div>
+                    <div class="form-group" id="descProductoGroup">
+                        <label>Producto</label>
+                        <select id="descProducto" onchange="actualizarPreview()">
+                            <option value="">Seleccionar producto...</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="descCategoriaGroup" style="display:none;">
+                        <label>Categoría</label>
+                        <select id="descCategoria" onchange="actualizarPreview()">
+                            <option value="">Seleccionar categoría...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Descuento (%)</label>
+                        <input type="number" id="descPorcentaje" min="1" max="100" placeholder="15" oninput="actualizarPreview()">
+                    </div>
+                    <div class="form-group">
+                        <label>Duración</label>
+                        <select id="descDuracion">
+                            <option value="1">1 día</option>
+                            <option value="2">2 días</option>
+                            <option value="3">3 días</option>
+                            <option value="7" selected>1 semana</option>
+                            <option value="14">2 semanas</option>
+                            <option value="21">3 semanas</option>
+                            <option value="30">30 días</option>
+                        </select>
+                    </div>
+
+                    <div id="previewDescuento" style="display:none;background:white;padding:1rem;border-radius:8px;margin:1rem 0;border:2px solid var(--accent);"></div>
+
+                    <button type="submit" class="btn-submit" id="btnAplicarDescuento">✅ Aplicar Descuento</button>
+                </form>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- POPUP AÑO -->
+    <div id="popupAnio" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:white;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,0.3);padding:2rem;z-index:9999;text-align:center;min-width:250px;">
+        <h3 style="margin:0 0 1rem;font-size:1.2rem;">📅 Año del footer</h3>
+        <input type="number" id="anioFooter" value="2025" min="2020" max="2100" style="width:100px;padding:0.6rem;border:2px solid #e5e7eb;border-radius:8px;font-size:1.1rem;text-align:center;">
+        <div style="margin-top:1rem;display:flex;gap:0.5rem;justify-content:center;">
+            <button onclick="guardarAnio()" style="padding:0.6rem 1.5rem;background:#2563eb;color:white;border:none;border-radius:8px;font-weight:600;cursor:pointer;">💾 Guardar</button>
+            <button onclick="cerrarPopupAnio()" style="padding:0.6rem 1.5rem;background:#e5e7eb;color:#374151;border:none;border-radius:8px;cursor:pointer;">Cancelar</button>
+        </div>
+        <div id="anioMsg" style="margin-top:0.5rem;font-weight:600;font-size:0.9rem;"></div>
+    </div>
+    <div id="popupAnioFondo" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);z-index:9998;" onclick="cerrarPopupAnio()"></div>
+
+    <!-- MODAL CATEGORÍA -->
+    <div id="modalCategoria" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalCategoriaLabel">Nueva Categoría</h3>
+                <button class="btn-close" onclick="closeModalCategoria()">×</button>
+            </div>
+            <form id="categoriaForm">
+                <div class="form-group">
+                    <label>Nombre *</label>
+                    <input type="text" id="catNombre" required placeholder="Ej: Electrodomésticos">
+                </div>
+                <div class="form-group">
+                    <label>Icono (emoji)</label>
+                    <input type="text" id="catIcono" placeholder="Haz clic en un emoji" value="📦" readonly style="cursor: pointer; background: #f3f4f6; font-size: 1.5rem; text-align: center;" onclick="toggleEmojiPicker()">
+                    <div id="emojiPicker" style="display: none; max-height: 200px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem; margin-top: 0.5rem; background: white; flex-wrap: wrap; gap: 0.25rem;">
+                        <span onclick="selectEmoji('📦')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">📦</span>
+                        <span onclick="selectEmoji('🔌')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🔌</span>
+                        <span onclick="selectEmoji('🍳')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🍳</span>
+                        <span onclick="selectEmoji('🧹')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🧹</span>
+                        <span onclick="selectEmoji('🛋️')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🛋️</span>
+                        <span onclick="selectEmoji('👕')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">👕</span>
+                        <span onclick="selectEmoji('📱')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">📱</span>
+                        <span onclick="selectEmoji('💻')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">💻</span>
+                        <span onclick="selectEmoji('📚')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">📚</span>
+                        <span onclick="selectEmoji('🎮')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🎮</span>
+                        <span onclick="selectEmoji('🔧')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🔧</span>
+                        <span onclick="selectEmoji('🪴')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🪴</span>
+                        <span onclick="selectEmoji('🧸')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🧸</span>
+                        <span onclick="selectEmoji('⚽')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">⚽</span>
+                        <span onclick="selectEmoji('🎵')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🎵</span>
+                        <span onclick="selectEmoji('🎨')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🎨</span>
+                        <span onclick="selectEmoji('🚗')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🚗</span>
+                        <span onclick="selectEmoji('✂️')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">✂️</span>
+                        <span onclick="selectEmoji('💊')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">💊</span>
+                        <span onclick="selectEmoji('🧴')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🧴</span>
+                        <span onclick="selectEmoji('🕯️')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🕯️</span>
+                        <span onclick="selectEmoji('🧊')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🧊</span>
+                        <span onclick="selectEmoji('🧲')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🧲</span>
+                        <span onclick="selectEmoji('🔋')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🔋</span>
+                        <span onclick="selectEmoji('💡')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">💡</span>
+                        <span onclick="selectEmoji('🧰')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🧰</span>
+                        <span onclick="selectEmoji('🚿')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🚿</span>
+                        <span onclick="selectEmoji('🛁')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🛁</span>
+                        <span onclick="selectEmoji('🚽')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🚽</span>
+                        <span onclick="selectEmoji('🧻')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🧻</span>
+                        <span onclick="selectEmoji('🪣')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🪣</span>
+                        <span onclick="selectEmoji('🧽')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🧽</span>
+                        <span onclick="selectEmoji('🧴')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🧴</span>
+                        <span onclick="selectEmoji('🪥')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🪥</span>
+                        <span onclick="selectEmoji('🪒')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🪒</span>
+                        <span onclick="selectEmoji('💄')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">💄</span>
+                        <span onclick="selectEmoji('💅')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">💅</span>
+                        <span onclick="selectEmoji('👗')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">👗</span>
+                        <span onclick="selectEmoji('👔')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">👔</span>
+                        <span onclick="selectEmoji('👖')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">👖</span>
+                        <span onclick="selectEmoji('🧥')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🧥</span>
+                        <span onclick="selectEmoji('🎒')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🎒</span>
+                        <span onclick="selectEmoji('👟')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">👟</span>
+                        <span onclick="selectEmoji('👠')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">👠</span>
+                        <span onclick="selectEmoji('🧢')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🧢</span>
+                        <span onclick="selectEmoji('🎩')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🎩</span>
+                        <span onclick="selectEmoji('🕶️')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🕶️</span>
+                        <span onclick="selectEmoji('⌚')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">⌚</span>
+                        <span onclick="selectEmoji('💍')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">💍</span>
+                        <span onclick="selectEmoji('👑')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">👑</span>
+                        <span onclick="selectEmoji('🔑')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🔑</span>
+                        <span onclick="selectEmoji('🔒')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🔒</span>
+                        <span onclick="selectEmoji('🔓')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🔓</span>
+                        <span onclick="selectEmoji('🪜')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🪜</span>
+                        <span onclick="selectEmoji('🔨')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🔨</span>
+                        <span onclick="selectEmoji('🪛')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🪛</span>
+                        <span onclick="selectEmoji('🔩')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🔩</span>
+                        <span onclick="selectEmoji('⚙️')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">⚙️</span>
+                        <span onclick="selectEmoji('🧱')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🧱</span>
+                        <span onclick="selectEmoji('🔧')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🔧</span>
+                        <span onclick="selectEmoji('🔦')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🔦</span>
+                        <span onclick="selectEmoji('🧯')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🧯</span>
+                        <span onclick="selectEmoji('🪫')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🪫</span>
+                        <span onclick="selectEmoji('🔋')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🔋</span>
+                        <span onclick="selectEmoji('💡')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">💡</span>
+                        <span onclick="selectEmoji('🔊')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🔊</span>
+                        <span onclick="selectEmoji('📷')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">📷</span>
+                        <span onclick="selectEmoji('📹')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">📹</span>
+                        <span onclick="selectEmoji('🎥')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🎥</span>
+                        <span onclick="selectEmoji('📺')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">📺</span>
+                        <span onclick="selectEmoji('🖥️')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🖥️</span>
+                        <span onclick="selectEmoji('🖨️')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🖨️</span>
+                        <span onclick="selectEmoji('⌨️')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">⌨️</span>
+                        <span onclick="selectEmoji('🖱️')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🖱️</span>
+                        <span onclick="selectEmoji('💽')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">💽</span>
+                        <span onclick="selectEmoji('💾')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">💾</span>
+                        <span onclick="selectEmoji('💿')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">💿</span>
+                        <span onclick="selectEmoji('📀')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">📀</span>
+                        <span onclick="selectEmoji('🎙️')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🎙️</span>
+                        <span onclick="selectEmoji('📻')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">📻</span>
+                        <span onclick="selectEmoji('🎛️')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🎛️</span>
+                        <span onclick="selectEmoji('⏰')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">⏰</span>
+                        <span onclick="selectEmoji('🕰️')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🕰️</span>
+                        <span onclick="selectEmoji('🧭')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🧭</span>
+                        <span onclick="selectEmoji('🧲')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🧲</span>
+                        <span onclick="selectEmoji('🔬')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🔬</span>
+                        <span onclick="selectEmoji('🔭')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🔭</span>
+                        <span onclick="selectEmoji('💉')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">💉</span>
+                        <span onclick="selectEmoji('🩹')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🩹</span>
+                        <span onclick="selectEmoji('🩺')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🩺</span>
+                        <span onclick="selectEmoji('🚑')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🚑</span>
+                        <span onclick="selectEmoji('🍎')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🍎</span>
+                        <span onclick="selectEmoji('🍞')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🍞</span>
+                        <span onclick="selectEmoji('🧀')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🧀</span>
+                        <span onclick="selectEmoji('🥩')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🥩</span>
+                        <span onclick="selectEmoji('🍕')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🍕</span>
+                        <span onclick="selectEmoji('🍔')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🍔</span>
+                        <span onclick="selectEmoji('🌭')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🌭</span>
+                        <span onclick="selectEmoji('🥤')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🥤</span>
+                        <span onclick="selectEmoji('☕')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">☕</span>
+                        <span onclick="selectEmoji('🧃')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🧃</span>
+                        <span onclick="selectEmoji('🧊')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🧊</span>
+                        <span onclick="selectEmoji('🐶')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🐶</span>
+                        <span onclick="selectEmoji('🐱')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🐱</span>
+                        <span onclick="selectEmoji('🐰')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🐰</span>
+                        <span onclick="selectEmoji('🦜')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🦜</span>
+                        <span onclick="selectEmoji('🐟')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🐟</span>
+                        <span onclick="selectEmoji('🌸')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🌸</span>
+                        <span onclick="selectEmoji('🌻')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🌻</span>
+                        <span onclick="selectEmoji('🌵')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🌵</span>
+                        <span onclick="selectEmoji('🌿')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🌿</span>
+                        <span onclick="selectEmoji('🍄')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🍄</span>
+                        <span onclick="selectEmoji('🌺')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🌺</span>
+                        <span onclick="selectEmoji('🌎')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🌎</span>
+                        <span onclick="selectEmoji('⭐')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">⭐</span>
+                        <span onclick="selectEmoji('🔥')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🔥</span>
+                        <span onclick="selectEmoji('💧')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">💧</span>
+                        <span onclick="selectEmoji('❄️')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">❄️</span>
+                        <span onclick="selectEmoji('☀️')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">☀️</span>
+                        <span onclick="selectEmoji('🌈')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🌈</span>
+                        <span onclick="selectEmoji('⚡')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">⚡</span>
+                        <span onclick="selectEmoji('🎈')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🎈</span>
+                        <span onclick="selectEmoji('🎉')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🎉</span>
+                        <span onclick="selectEmoji('🎁')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🎁</span>
+                        <span onclick="selectEmoji('🏆')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🏆</span>
+                        <span onclick="selectEmoji('🥇')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🥇</span>
+                        <span onclick="selectEmoji('💎')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">💎</span>
+                        <span onclick="selectEmoji('♻️')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">♻️</span>
+                        <span onclick="selectEmoji('📦')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">📦</span>
+                        <span onclick="selectEmoji('📌')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">📌</span>
+                        <span onclick="selectEmoji('📍')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">📍</span>
+                        <span onclick="selectEmoji('🧷')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🧷</span>
+                        <span onclick="selectEmoji('🧵')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🧵</span>
+                        <span onclick="selectEmoji('🪡')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🪡</span>
+                        <span onclick="selectEmoji('🪢')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🪢</span>
+                        <span onclick="selectEmoji('🛏️')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🛏️</span>
+                        <span onclick="selectEmoji('🪞')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🪞</span>
+                        <span onclick="selectEmoji('🗄️')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🗄️</span>
+                        <span onclick="selectEmoji('🧺')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🧺</span>
+                        <span onclick="selectEmoji('🪑')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🪑</span>
+                        <span onclick="selectEmoji('📡')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">📡</span>
+                        <span onclick="selectEmoji('💨')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">💨</span>
+                        <span onclick="selectEmoji('🍽️')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🍽️</span>
+                        <span onclick="selectEmoji('🧂')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🧂</span>
+                        <span onclick="selectEmoji('🧊')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">🧊</span>
+                        <span onclick="selectEmoji('📟')" style="cursor:pointer;font-size:1.5rem;padding:0.25rem 0.4rem;border-radius:4px;transition:background 0.2s;" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='transparent'">📟</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Orden (posición en menú)</label>
+                    <div style="display:flex;align-items:center;gap:0.5rem;">
+                        <input type="number" id="catOrden" min="0" value="0" style="flex:1;" oninput="checkOrdenDisponible()">
+                        <button type="button" onclick="ordenAnterior()" style="padding:0.5rem 0.75rem;border:1px solid var(--border);border-radius:8px;cursor:pointer;background:var(--bg-light);font-size:1.2rem;">◀</button>
+                        <button type="button" onclick="ordenSiguiente()" style="padding:0.5rem 0.75rem;border:1px solid var(--border);border-radius:8px;cursor:pointer;background:var(--bg-light);font-size:1.2rem;">▶</button>
+                    </div>
+                    <div id="ordenWarning" style="display:none;color:#ef4444;font-size:0.85rem;margin-top:0.25rem;"></div>
+                </div>
+                <button type="submit" class="btn-submit">💾 Crear Categoría</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL EDITAR PRODUCTO -->
+    <div id="modalProducto" class="modal">
+        <div class="modal-content" style="max-width:700px;">
+            <div class="modal-header">
+                <h3 id="modalProductoLabel">Editar Producto</h3>
+                <button class="btn-close" onclick="closeModalProducto()">×</button>
+            </div>
+            <form id="productoModalForm">
+                <input type="hidden" id="modalProductoId">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Nombre *</label>
+                        <input type="text" id="modalProdNombre" required placeholder="Ej: Soporte TV 32-55">
+                    </div>
+                    <div class="form-group">
+                        <label>Categoría *</label>
+                        <select id="modalProdCategoria" required>
+                            <option value="">Seleccionar...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Precio (COP) *</label>
+                        <input type="number" id="modalProdPrecio" required min="0" placeholder="58000">
+                    </div>
+                    <div class="form-group">
+                        <label>Stock *</label>
+                        <input type="number" id="modalProdStock" required min="0" placeholder="50">
+                    </div>
+                    <div class="form-group">
+                        <label>Descuento (%)</label>
+                        <input type="number" id="modalProdDescuento" min="0" max="100" placeholder="0" value="0">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Descripción</label>
+                    <textarea id="modalProdDescripcion" placeholder="Descripción detallada..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Imagen del producto</label>
+                    <div class="image-upload" onclick="document.getElementById('modalProdImagen').click()">
+                        <input type="file" id="modalProdImagen" accept="image/*" onchange="previewModalImage(this)">
+                        <div id="modalUploadText">
+                            <div style="font-size:2rem;">📷</div>
+                            <p>Click para subir / cambiar imagen</p>
+                            <small>JPG, PNG, WebP (máx 2MB)</small>
+                        </div>
+                        <img id="modalImagePreview" class="image-preview">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label><input type="checkbox" id="modalProdDisponible" checked> Producto disponible</label>
+                    <label style="margin-left:1rem;"><input type="checkbox" id="modalProdDestacado"> Producto destacado</label>
+                </div>
+                <div class="variantes-container">
+                    <label>Variantes (colores, tamaños, etc.)</label>
+                    <div id="modalVariantesList"></div>
+                    <button type="button" class="btn-add-variante" onclick="addModalVariante()">+ Agregar variante</button>
+                </div>
+                <div style="margin-top:1.5rem;display:flex;gap:1rem;">
+                    <button type="submit" class="btn-submit" id="btnGuardarModal">💾 Guardar Cambios</button>
+                    <button type="button" class="btn-primary" style="background:var(--text-gray);" onclick="closeModalProducto()">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        // CONFIGURACIÓN SUPABASE - FIX: usar 'db' en lugar de 'supabase'
+        // para evitar conflicto con window.supabase del CDN
+        // ============================================================
+        const SUPABASE_URL = 'https://cxbxbazwrngarmnxmbdz.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4YnhiYXp3cm5nYXJtbnhtYmR6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzODcwMjQsImV4cCI6MjA5Njk2MzAyNH0.PobtXU3aSr27EOpTCcjN22Y--DiEIf01E3Y8e7SENTQ';
+
+        // ✅ FIX PRINCIPAL: 'db' en vez de 'supabase' para no colisionar con el CDN
+        const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        console.log('✅ Supabase inicializado');
+
+        // ============================================================
+        // VARIABLES GLOBALES
+        // ============================================================
+        let categorias = [];
+        let productos = [];
+        let pedidos = [];
+        let descuentos = [];
+        let editingProductId = null;
+        let editingCategoryId = null;
+
+        // ============================================================
+        // INICIALIZACIÓN
+        // ============================================================
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('🚀 Página cargada');
+
+            const { data: { session } } = await db.auth.getSession();
+
+            if (session) {
+                const { data: adminRow } = await db
+                    .from('admins')
+                    .select('email')
+                    .eq('email', session.user.email)
+                    .maybeSingle();
+
+                if (adminRow) {
+                    console.log('✅ Admin autenticado:', session.user.email);
+                    showPanel();
+                    await loadInitialData();
+                } else {
+                    console.log('⛔ Acceso denegado:', session.user.email);
+                    await db.auth.signOut();
+                    showLogin();
+                    document.getElementById('loginError').textContent = 'Acceso denegado. No tienes permisos de administrador.';
+                    document.getElementById('loginError').classList.add('show');
+                }
+            } else {
+                console.log('❌ No hay sesión');
+                showLogin();
+            }
+
+            document.getElementById('productoForm')?.addEventListener('submit', handleSaveProducto);
+            document.getElementById('categoriaForm')?.addEventListener('submit', handleSaveCategoria);
+            document.getElementById('descuentoForm')?.addEventListener('submit', handleSaveDescuento);
+            document.getElementById('productoModalForm')?.addEventListener('submit', handleSaveProductoModal);
+
+            addVariante();
+        });
+
+        // ============================================================
+        // AUTENTICACIÓN
+        // ============================================================
+        function showLogin() {
+            document.getElementById('loginSection').style.display = 'block';
+            document.getElementById('panelSection').style.display = 'none';
+        }
+
+        function showPanel() {
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('panelSection').style.display = 'block';
+
+            db.auth.getUser().then(({ data: { user } }) => {
+                document.getElementById('userEmail').textContent = user?.email || 'Admin';
+                const meta = user?.user_metadata || {};
+                if (meta.avatar_url || meta.picture) {
+                    const avatar = document.getElementById('userAvatar');
+                    avatar.src = meta.avatar_url || meta.picture;
+                    avatar.style.display = 'inline';
+                }
+            });
+        }
+
+        async function loginWithGoogle() {
+            const btn = document.getElementById('loginBtn');
+            btn.disabled = true;
+            btn.textContent = 'Redirigiendo a Google...';
+            document.getElementById('loginError').classList.remove('show');
+
+            try {
+                const { error } = await db.auth.signInWithOAuth({
+                    provider: 'google',
+                    options: {
+                        redirectTo: 'https://almacen-don-diego.pages.dev/admin.html'
+                    }
+                });
+                if (error) throw error;
+            } catch (err) {
+                document.getElementById('loginError').textContent = 'Error: ' + err.message;
+                document.getElementById('loginError').classList.add('show');
+                btn.disabled = false;
+                btn.textContent = 'Iniciar sesión con Google';
+            }
+        }
+
+        async function logout() {
+            await db.auth.signOut();
+            window.location.reload();
+        }
+
+        // ============================================================
+        // CARGA DE DATOS
+        // ============================================================
+        async function loadInitialData() {
+            await Promise.all([loadCategorias(), loadProductos(), loadPedidos(), loadDescuentos()]);
+            populateCategoriasSelect();
+            populateDescuentosSelects();
+            renderProductos();
+            renderCategorias();
+            renderPedidos();
+            renderDescuentos();
+            calcularEstadisticas();
+            checkLowStock();
+            populateDescuentosSelects();
+        }
+
+        // ============================================================
+        // CATEGORÍAS
+        // ============================================================
+        async function loadCategorias() {
+            const { data, error } = await db.from('categorias').select('*').eq('activa', true).order('orden');
+            if (error) { console.error('Error categorías:', error); return; }
+            categorias = data || [];
+        }
+
+        function populateCategoriasSelect() {
+            const selects = ['prodCategoria', 'modalProdCategoria'];
+            selects.forEach(id => {
+                const select = document.getElementById(id);
+                if (!select) return;
+                select.innerHTML = '<option value="">Seleccionar...</option>';
+                categorias.forEach(cat => {
+                    const option = document.createElement('option');
+                    option.value = cat.id;
+                    option.textContent = `${cat.icono || '📦'} ${cat.nombre}`;
+                    select.appendChild(option);
+                });
+            });
+        }
+
+        function renderCategorias() {
+            const container = document.getElementById('listaCategorias');
+            if (!container) return;
+            if (categorias.length === 0) {
+                container.innerHTML = '<p style="text-align:center;color:var(--text-gray);">No hay categorías</p>';
+                return;
+            }
+            container.innerHTML = categorias.map(cat => `
+                <div class="categoria-item">
+                    <div class="categoria-info">
+                        <span class="categoria-icon">${cat.icono || '📦'}</span>
+                        <div>
+                            <strong>${cat.nombre}</strong>
+                            <small style="display:block;color:var(--text-gray);">Orden: ${cat.orden}</small>
+                        </div>
+                    </div>
+                    <div>
+                        <button class="btn-action btn-edit" onclick="editCategoria('${cat.id}')">✏️</button>
+                        <button class="btn-action btn-delete" onclick="deleteCategoria('${cat.id}')">🗑️</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function handleSaveCategoria(e) {
+            e.preventDefault();
+            const nombre = document.getElementById('catNombre').value.trim();
+            const icono = document.getElementById('catIcono').value.trim() || '📦';
+            const orden = parseInt(document.getElementById('catOrden').value) || 0;
+            const slug = nombre.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
+            // Evitar duplicados por slug (case insensitive, sin acentos)
+            const existe = categorias.some(c => {
+                const slugExistente = c.nombre.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+                return slugExistente === slug && c.id !== editingCategoryId;
+            });
+            if (existe) {
+                showToast(`⚠️ La categoría "${nombre}" ya existe`, 'error');
+                return;
+            }
+
+            // Deshabilitar botón para evitar doble clic
+            const btn = e.target.querySelector('button[type="submit"]');
+            if (btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
+
+            if (editingCategoryId) {
+                const { error } = await db.from('categorias').update({ nombre, icono, orden, slug }).eq('id', editingCategoryId);
+                if (error) { showToast('Error: ' + error.message, 'error'); if (btn) { btn.disabled = false; btn.textContent = '💾 Crear Categoría'; } return; }
+                showToast('✅ Categoría actualizada', 'success');
+            } else {
+                const { error } = await db.from('categorias').insert([{ nombre, icono, orden, slug }]);
+                if (error) { showToast('Error: ' + error.message, 'error'); if (btn) { btn.disabled = false; btn.textContent = '💾 Crear Categoría'; } return; }
+                showToast('✅ Categoría creada', 'success');
+            }
+
+            editingCategoryId = null;
+            closeModalCategoria();
+            await loadCategorias();
+            populateCategoriasSelect();
+            renderCategorias();
+            populateDescuentosSelects();
+        }
+
+        async function deleteCategoria(id) {
+            if (!confirm('¿Eliminar esta categoría?')) return;
+            await db.from('categorias').update({ activa: false }).eq('id', id);
+            await loadCategorias();
+            populateCategoriasSelect();
+            renderCategorias();
+            populateDescuentosSelects();
+        }
+
+        // ============================================================
+        // DESCUENTOS - Helper functions for products
+        // ============================================================
+        function descuentoEfectivo(prod) {
+            const promo = descuentos.find(d => {
+                if (!d.activa) return false;
+                if (d.fecha_fin && new Date(d.fecha_fin) < new Date()) return false;
+                if (d.tipo === 'producto') return d.referencia_id === prod.id;
+                if (d.tipo === 'categoria') return d.referencia_id === prod.categoria_id;
+                return false;
+            });
+            return Math.max(prod.descuento || 0, promo ? promo.descuento : 0);
+        }
+
+        function precioFinalDescuento(prod) {
+            const d = descuentoEfectivo(prod);
+            return d > 0 ? prod.precio - Math.round(prod.precio * d / 100) : prod.precio;
+        }
+
+        function renderDescuentoProducto(prod) {
+            const d = descuentoEfectivo(prod);
+            if (d <= 0) return '';
+            const finalP = precioFinalDescuento(prod);
+            return `<br><small style="color:var(--accent);">-${d}% <del style="color:var(--text-gray);font-size:0.85em;">$${prod.precio.toLocaleString('es-CO')}</del> → <strong>$${finalP.toLocaleString('es-CO')}</strong></small>`;
+        }
+
+        // ============================================================
+        // PRODUCTOS
+        // ============================================================
+        async function loadProductos() {
+            const { data, error } = await db.from('productos').select('*, categorias(nombre, icono)').order('created_at', { ascending: false });
+            if (error) { console.error('Error productos:', error); return; }
+            productos = data || [];
+        }
+
+        function renderProductos() {
+            const tbody = document.getElementById('tbodyProductos');
+            if (!tbody) return;
+            if (productos.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2rem;">No hay productos</td></tr>';
+                return;
+            }
+            tbody.innerHTML = productos.map(prod => {
+                const cat = prod.categorias || { nombre: 'Sin cat.', icono: '' };
+                let estadoClass = 'badge-success', estadoText = 'Disponible';
+                if (!prod.disponible) { estadoClass = 'badge-danger'; estadoText = 'No disponible'; }
+                else if (prod.stock === 0) { estadoClass = 'badge-warning'; estadoText = 'Sin stock'; }
+                else if (prod.stock < 5) { estadoClass = 'badge-warning'; estadoText = `Bajo (${prod.stock})`; }
+
+                return `
+                    <tr>
+                        <td>${prod.imagen_url ? `<img src="${prod.imagen_url}" class="product-img">` : '<div style="width:60px;height:60px;background:#f3f4f6;border-radius:8px;display:flex;align-items:center;justify-content:center;">📦</div>'}</td>
+                        <td><strong>${prod.nombre}</strong>${renderDescuentoProducto(prod)}</td>
+                        <td>${cat.icono} ${cat.nombre}</td>
+                        <td>$${precioFinalDescuento(prod).toLocaleString('es-CO')}</td>
+                        <td>${prod.stock}</td>
+                        <td style="max-width:200px;font-size:0.85rem;color:var(--text-gray);">${(prod.descripcion || '').substring(0, 80)}${(prod.descripcion || '').length > 80 ? '...' : ''}</td>
+                        <td><span class="badge ${estadoClass}">${estadoText}</span></td>
+                        <td>
+                            <button class="btn-action btn-edit" onclick="editProducto('${prod.id}')">✏️</button>
+                            <button class="btn-action btn-delete" onclick="deleteProducto('${prod.id}')">🗑️</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function checkLowStock() {
+            const alert = document.getElementById('lowStockAlert');
+            const bajos = productos.filter(p => p.disponible && p.stock > 0 && p.stock <= 5);
+            const agotados = productos.filter(p => p.disponible && p.stock === 0);
+
+            if (bajos.length === 0 && agotados.length === 0) {
+                alert.style.display = 'none';
+                return;
+            }
+
+            let html = '';
+            if (agotados.length > 0) {
+                html += `<div style="color:#ef4444; margin-bottom:0.25rem;">⛔ ${agotados.length} producto${agotados.length > 1 ? 's' : ''} agotado${agotados.length > 1 ? 's' : ''}: ${agotados.map(p => p.nombre).join(', ')}</div>`;
+            }
+            if (bajos.length > 0) {
+                html += `<div style="color:#f59e0b;">⚠️ ${bajos.length} producto${bajos.length > 1 ? 's' : ''} con stock bajo (≤5): ${bajos.map(p => `${p.nombre} (${p.stock})`).join(', ')}</div>`;
+            }
+
+            alert.innerHTML = html;
+            alert.style.display = 'block';
+            alert.style.background = agotados.length > 0 ? '#fef2f2' : '#fffbeb';
+            alert.style.border = `2px solid ${agotados.length > 0 ? '#ef4444' : '#f59e0b'}`;
+        }
+
+        async function handleSaveProducto(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btnGuardar');
+            btn.disabled = true;
+            btn.textContent = 'Guardando...';
+
+            try {
+                const nombre = document.getElementById('prodNombre').value.trim();
+                const categoria_id = document.getElementById('prodCategoria').value;
+                const precio = parseInt(document.getElementById('prodPrecio').value) || 0;
+                const stock = parseInt(document.getElementById('prodStock').value) || 0;
+                const descripcion = document.getElementById('prodDescripcion').value.trim();
+                const descuento = parseInt(document.getElementById('prodDescuento').value) || 0;
+                const disponible = document.getElementById('prodDisponible').checked;
+                const destacado = document.getElementById('prodDestacado').checked;
+
+                const variantes = [];
+                document.querySelectorAll('.variante-input').forEach(input => {
+                    if (input.value.trim()) variantes.push(input.value.trim());
+                });
+
+                // Auto-gestionar disponibilidad según stock
+                const autoDisponible = stock > 0 ? disponible : false;
+
+                const productoData = { nombre, categoria_id, precio, stock: Math.max(0, stock), descripcion, descuento, disponible: autoDisponible, destacado, variantes };
+
+                const file = document.getElementById('prodImagen').files[0];
+                if (file) {
+                    const ext = file.name.split('.').pop();
+                    const fileName = `${Date.now()}_${Math.random().toString(36).substr(2,9)}.${ext}`;
+                    const { error: uploadError } = await db.storage.from('productos').upload(fileName, file);
+                    if (uploadError) throw uploadError;
+                    const { data: { publicUrl } } = db.storage.from('productos').getPublicUrl(fileName);
+                    productoData.imagen_url = publicUrl;
+                }
+
+                if (editingProductId) {
+                    await db.from('productos').update(productoData).eq('id', editingProductId);
+                    showToast('✅ Producto actualizado', 'success');
+                } else {
+                    await db.from('productos').insert([productoData]);
+                    showToast('✅ Producto creado', 'success');
+                }
+
+                resetForm();
+                await loadProductos();
+                renderProductos();
+                checkLowStock();
+                populateDescuentosSelects();
+                showTab('productos');
+
+            } catch (err) {
+                showToast('❌ Error: ' + err.message, 'error');
+                console.error(err);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '💾 Guardar Producto';
+            }
+        }
+
+        async function deleteProducto(id) {
+            if (!confirm('¿Eliminar producto?')) return;
+            await db.from('productos').delete().eq('id', id);
+            await loadProductos();
+            renderProductos();
+            checkLowStock();
+            populateDescuentosSelects();
+        }
+
+        function editProducto(id) {
+            const prod = productos.find(p => p.id === id);
+            if (!prod) return;
+            editingProductId = id;
+
+            document.getElementById('modalProductoId').value = id;
+            document.getElementById('modalProdNombre').value = prod.nombre;
+            document.getElementById('modalProdCategoria').value = prod.categoria_id || '';
+            document.getElementById('modalProdPrecio').value = prod.precio;
+            document.getElementById('modalProdStock').value = prod.stock;
+            document.getElementById('modalProdDescripcion').value = prod.descripcion || '';
+            document.getElementById('modalProdDescuento').value = prod.descuento || 0;
+            document.getElementById('modalProdDisponible').checked = prod.disponible;
+            document.getElementById('modalProdDestacado').checked = prod.destacado || false;
+
+            const container = document.getElementById('modalVariantesList');
+            container.innerHTML = '';
+            if (prod.variantes && prod.variantes.length > 0) {
+                prod.variantes.forEach(v => {
+                    const div = document.createElement('div');
+                    div.className = 'variante-row';
+                    div.innerHTML = `<input type="text" value="${v}" class="variante-input"><button type="button" class="btn-remove-variante" onclick="this.parentElement.remove()">❌</button>`;
+                    container.appendChild(div);
+                });
+            } else {
+                addModalVariante();
+            }
+
+            // Resetear preview de imagen
+            document.getElementById('modalImagePreview').style.display = 'none';
+            document.getElementById('modalUploadText').style.display = 'block';
+            if (prod.imagen_url) {
+                const img = document.getElementById('modalImagePreview');
+                img.src = prod.imagen_url;
+                img.style.display = 'block';
+                document.getElementById('modalUploadText').style.display = 'none';
+            }
+
+            document.getElementById('modalProducto').classList.add('active');
+        }
+
+        function closeModalProducto() {
+            document.getElementById('modalProducto').classList.remove('active');
+            editingProductId = null;
+        }
+
+        function addModalVariante() {
+            const container = document.getElementById('modalVariantesList');
+            const div = document.createElement('div');
+            div.className = 'variante-row';
+            div.innerHTML = `<input type="text" placeholder="Ej: Color rojo" class="variante-input"><button type="button" class="btn-remove-variante" onclick="this.parentElement.remove()">❌</button>`;
+            container.appendChild(div);
+        }
+
+        function previewModalImage(input) {
+            const preview = document.getElementById('modalImagePreview');
+            const text = document.getElementById('modalUploadText');
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = e => { preview.src = e.target.result; preview.style.display = 'block'; text.style.display = 'none'; };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        async function handleSaveProductoModal(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btnGuardarModal');
+            btn.disabled = true;
+            btn.textContent = 'Guardando...';
+
+            try {
+                const id = document.getElementById('modalProductoId').value;
+                const nombre = document.getElementById('modalProdNombre').value.trim();
+                const categoria_id = document.getElementById('modalProdCategoria').value;
+                const precio = parseInt(document.getElementById('modalProdPrecio').value) || 0;
+                const stock = parseInt(document.getElementById('modalProdStock').value) || 0;
+                const descripcion = document.getElementById('modalProdDescripcion').value.trim();
+                const descuento = parseInt(document.getElementById('modalProdDescuento').value) || 0;
+                const disponible = document.getElementById('modalProdDisponible').checked;
+                const destacado = document.getElementById('modalProdDestacado').checked;
+
+                const variantes = [];
+                document.querySelectorAll('#modalVariantesList .variante-input').forEach(input => {
+                    if (input.value.trim()) variantes.push(input.value.trim());
+                });
+
+                const autoDisponible = stock > 0 ? disponible : false;
+                const productoData = { nombre, categoria_id, precio, stock: Math.max(0, stock), descripcion, descuento, disponible: autoDisponible, destacado, variantes };
+
+                const file = document.getElementById('modalProdImagen').files[0];
+                if (file) {
+                    const ext = file.name.split('.').pop();
+                    const fileName = `${Date.now()}_${Math.random().toString(36).substr(2,9)}.${ext}`;
+                    const { error: uploadError } = await db.storage.from('productos').upload(fileName, file);
+                    if (uploadError) throw uploadError;
+                    const { data: { publicUrl } } = db.storage.from('productos').getPublicUrl(fileName);
+                    productoData.imagen_url = publicUrl;
+                }
+
+                await db.from('productos').update(productoData).eq('id', id);
+                showToast('✅ Producto actualizado', 'success');
+
+                closeModalProducto();
+                await loadProductos();
+                renderProductos();
+                checkLowStock();
+                populateDescuentosSelects();
+
+            } catch (err) {
+                showToast('❌ Error: ' + err.message, 'error');
+                console.error(err);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '💾 Guardar Cambios';
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('productoForm').reset();
+            document.getElementById('productoId').value = '';
+            document.getElementById('formTitle').textContent = 'Agregar Nuevo Producto';
+            document.getElementById('imagePreview').style.display = 'none';
+            document.getElementById('uploadText').style.display = 'block';
+            document.getElementById('variantesList').innerHTML = '';
+            addVariante();
+            editingProductId = null;
+        }
+
+        function addVariante() {
+            const container = document.getElementById('variantesList');
+            const div = document.createElement('div');
+            div.className = 'variante-row';
+            div.innerHTML = `<input type="text" placeholder="Ej: Color rojo" class="variante-input"><button type="button" class="btn-remove-variante" onclick="this.parentElement.remove()">❌</button>`;
+            container.appendChild(div);
+        }
+
+        function previewImage(input) {
+            const preview = document.getElementById('imagePreview');
+            const text = document.getElementById('uploadText');
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = e => { preview.src = e.target.result; preview.style.display = 'block'; text.style.display = 'none'; };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        // ============================================================
+        // PEDIDOS
+        // ============================================================
+        async function loadPedidos() {
+            const { data, error } = await db.from('pedidos').select('*').order('created_at', { ascending: false });
+            if (error) { console.error('Error pedidos:', error); return; }
+            pedidos = data || [];
+        }
+
+        function renderPedidos() {
+            const tbody = document.getElementById('tbodyPedidos');
+            if (!tbody) return;
+            if (pedidos.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;">No hay pedidos</td></tr>';
+                return;
+            }
+            tbody.innerHTML = pedidos.map(ped => {
+                const fecha = new Date(ped.created_at).toLocaleString('es-CO', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+                const prods = ped.productos.map(p => `${p.nombre} x${p.cantidad}`).join(', ');
+                return `
+                    <tr>
+                        <td>${fecha}</td>
+                        <td>${ped.cliente_nombre || 'Sin nombre'}</td>
+                        <td style="max-width:200px;font-size:0.875rem;">${prods}</td>
+                        <td>$${ped.total.toLocaleString('es-CO')}</td>
+                        <td>${ped.estado}</td>
+                        <td><button class="btn-action btn-edit" onclick="verPedido('${ped.id}')">👁️</button></td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function verPedido(id) {
+            const ped = pedidos.find(p => p.id === id);
+            if (!ped) return;
+            const prods = ped.productos.map(p => `• ${p.nombre} x${p.cantidad} = $${p.subtotal.toLocaleString('es-CO')}`).join('<br>');
+            showToast(`
+                <b>📦 Pedido</b><br><br>
+                👤 ${ped.cliente_nombre || 'Sin nombre'}<br>
+                📱 ${ped.cliente_telefono || '-'}<br><br>
+                ${prods}<br><br>
+                💵 <b>Total: $${ped.total.toLocaleString('es-CO')}</b><br>
+                📊 Estado: ${ped.estado}
+            `, 'info', 6000);
+        }
+
+        // ============================================================
+        // DESCUENTOS (Promociones por tiempo limitado)
+        // ============================================================
+        async function loadDescuentos() {
+            const { data, error } = await db.from('descuentos').select('*').order('created_at', { ascending: false });
+            if (error) { console.error('Error descuentos:', error); return; }
+            descuentos = (data || []).filter(d => {
+                if (!d.activa) return false;
+                if (d.fecha_fin && new Date(d.fecha_fin) < new Date()) return false;
+                return true;
+            });
+        }
+
+        function populateDescuentosSelects() {
+            const prodSelect = document.getElementById('descProducto');
+            const catSelect = document.getElementById('descCategoria');
+            if (prodSelect) {
+                prodSelect.innerHTML = '<option value="">Seleccionar producto...</option>' +
+                    productos.filter(p => p.disponible).map(p =>
+                        `<option value="${p.id}">${p.nombre} ($${p.precio.toLocaleString('es-CO')})</option>`
+                    ).join('');
+            }
+            if (catSelect) {
+                catSelect.innerHTML = '<option value="">Seleccionar categoría...</option>' +
+                    categorias.map(c =>
+                        `<option value="${c.id}">${c.icono} ${c.nombre}</option>`
+                    ).join('');
+            }
+        }
+
+        function toggleTipoDescuento() {
+            const tipo = document.querySelector('input[name="tipoDescuento"]:checked').value;
+            document.getElementById('descProductoGroup').style.display = tipo === 'producto' ? 'block' : 'none';
+            document.getElementById('descCategoriaGroup').style.display = tipo === 'categoria' ? 'block' : 'none';
+            actualizarPreview();
+        }
+
+        function actualizarPreview() {
+            const preview = document.getElementById('previewDescuento');
+            const tipo = document.querySelector('input[name="tipoDescuento"]:checked').value;
+            const desc = parseInt(document.getElementById('descPorcentaje').value) || 0;
+            preview.style.display = 'none';
+
+            if (desc < 1 || desc > 100) return;
+
+            const refId = tipo === 'producto'
+                ? document.getElementById('descProducto').value
+                : document.getElementById('descCategoria').value;
+            if (!refId) return;
+
+            if (tipo === 'producto') {
+                const prod = productos.find(p => p.id === refId);
+                if (!prod) return;
+                const finalP = prod.precio - Math.round(prod.precio * desc / 100);
+                preview.innerHTML = `
+                    <strong>📦 Vista previa</strong><br><br>
+                    Producto: <b>${prod.nombre}</b><br>
+                    ${prod.descripcion ? `Descripción: ${prod.descripcion.substring(0, 100)}${prod.descripcion.length > 100 ? '...' : ''}<br>` : ''}
+                    Precio original: <del>$${prod.precio.toLocaleString('es-CO')}</del><br>
+                    Descuento: <b style="color:var(--accent);">-${desc}%</b><br>
+                    Precio final: <b style="color:var(--accent);font-size:1.2rem;">$${finalP.toLocaleString('es-CO')}</b>
+                `;
+            } else {
+                const prods = productos.filter(p => p.categoria_id === refId && p.disponible);
+                if (prods.length === 0) {
+                    preview.innerHTML = `<strong>⚠️ Sin productos disponibles en esta categoría</strong>`;
+                } else {
+                    preview.innerHTML = `<strong>📋 Vista previa - ${prods.length} producto(s)</strong><br><br>` +
+                        prods.map(p => {
+                            const finalP = p.precio - Math.round(p.precio * desc / 100);
+                            return `• ${p.nombre}: <del>$${p.precio.toLocaleString('es-CO')}</del> → <b style="color:var(--accent);">$${finalP.toLocaleString('es-CO')}</b> (-${desc}%)`;
+                        }).join('<br>');
+                }
+            }
+            preview.style.display = 'block';
+        }
+
+        function renderDescuentos() {
+            const container = document.getElementById('listaDescuentos');
+            if (!container) return;
+            if (descuentos.length === 0) {
+                container.innerHTML = '<p style="color:var(--text-gray);">No hay descuentos activos</p>';
+                return;
+            }
+            container.innerHTML = `
+                <h3 style="color:var(--primary);margin-bottom:0.75rem;font-size:1rem;">Descuentos Activos</h3>
+                ${descuentos.map(d => {
+                    const prod = d.tipo === 'producto' ? productos.find(p => p.id === d.referencia_id) : null;
+                    const nombre = d.tipo === 'producto'
+                        ? (prod?.nombre || 'Producto eliminado')
+                        : (categorias.find(c => c.id === d.referencia_id)?.nombre || 'Categoría eliminada');
+                    const descripcion = prod?.descripcion ? prod.descripcion.substring(0, 60) : '';
+                    const vence = d.fecha_fin ? `<br><small>⏳ Vence: ${new Date(d.fecha_fin).toLocaleDateString('es-CO')}</small>` : '<br><small>♾️ Sin fecha</small>';
+                    return `
+                        <div style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem;background:white;border-radius:8px;margin-bottom:0.5rem;border:1px solid var(--border);">
+                            <div>
+                                <strong>${d.tipo === 'producto' ? '📦' : '📁'} ${nombre}</strong>
+                                <span style="color:var(--accent);font-weight:600;margin-left:0.5rem;">-${d.descuento}%</span>
+                                ${descripcion ? `<br><small style="color:var(--text-gray);">${descripcion}${prod.descripcion.length > 60 ? '...' : ''}</small>` : ''}
+                                ${vence}
+                            </div>
+                            <button class="btn-action btn-delete" onclick="deleteDescuento('${d.id}')">🗑️</button>
+                        </div>
+                    `;
+                }).join('')}
+            `;
+        }
+
+        async function handleSaveDescuento(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btnAplicarDescuento');
+            btn.disabled = true;
+            btn.textContent = 'Guardando...';
+
+            try {
+                const tipo = document.querySelector('input[name="tipoDescuento"]:checked').value;
+                const referencia_id = tipo === 'producto'
+                    ? document.getElementById('descProducto').value
+                    : document.getElementById('descCategoria').value;
+                const descuento = parseInt(document.getElementById('descPorcentaje').value) || 0;
+                const duracion = parseInt(document.getElementById('descDuracion').value) || 0;
+
+                if (!referencia_id) { showToast('⚠️ Selecciona un producto o categoría', 'error'); btn.disabled = false; btn.textContent = '✅ Aplicar Descuento'; return; }
+                if (descuento < 1 || descuento > 100) { showToast('⚠️ El descuento debe ser entre 1% y 100%', 'error'); btn.disabled = false; btn.textContent = '✅ Aplicar Descuento'; return; }
+
+                const fecha_fin = duracion > 0 ? new Date(Date.now() + duracion * 24 * 60 * 60 * 1000).toISOString() : null;
+
+                const { error } = await db.from('descuentos').insert([{ tipo, referencia_id, descuento, fecha_fin }]);
+                if (error) { showToast('❌ Error: ' + error.message, 'error'); btn.disabled = false; btn.textContent = '✅ Aplicar Descuento'; return; }
+
+                showToast('✅ Descuento aplicado correctamente', 'success');
+                document.getElementById('descuentoForm').reset();
+                document.getElementById('previewDescuento').style.display = 'none';
+                await loadDescuentos();
+                renderDescuentos();
+                renderProductos();
+
+            } catch (err) {
+                showToast('❌ Error: ' + err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '✅ Aplicar Descuento';
+            }
+        }
+
+        async function deleteDescuento(id) {
+            if (!confirm('¿Eliminar este descuento?')) return;
+            const { error } = await db.from('descuentos').update({ activa: false }).eq('id', id);
+            if (error) { showToast('Error: ' + error.message, 'error'); return; }
+            await loadDescuentos();
+            renderDescuentos();
+            renderProductos();
+            showToast('✅ Descuento eliminado', 'success');
+        }
+
+        // ============================================================
+        // ESTADÍSTICAS
+        // ============================================================
+        function calcularEstadisticas() {
+            const hoy = new Date(); hoy.setHours(0,0,0,0);
+            const inicioSemana = new Date(hoy); inicioSemana.setDate(hoy.getDate() - hoy.getDay());
+            const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+
+            const sumar = (filtro) => pedidos.filter(p => p.estado === 'completado' && filtro(p)).reduce((s, p) => s + p.total, 0);
+
+            document.getElementById('statHoy').textContent = '$' + sumar(p => new Date(p.created_at) >= hoy).toLocaleString('es-CO');
+            document.getElementById('statSemana').textContent = '$' + sumar(p => new Date(p.created_at) >= inicioSemana).toLocaleString('es-CO');
+            document.getElementById('statMes').textContent = '$' + sumar(p => new Date(p.created_at) >= inicioMes).toLocaleString('es-CO');
+            document.getElementById('statTotal').textContent = '$' + sumar(() => true).toLocaleString('es-CO');
+        }
+
+        // ============================================================
+        // UTILIDADES
+        // ============================================================
+        function showTab(tabName) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.getElementById(`tab-${tabName}`)?.classList.add('active');
+            const idx = ['productos','agregar','categorias','pedidos','estadisticas','descuentos'].indexOf(tabName);
+            if (idx >= 0) document.querySelectorAll('.tab')[idx].classList.add('active');
+        }
+
+        function mostrarInputAnio() {
+            const popup = document.getElementById('popupAnio');
+            const fondo = document.getElementById('popupAnioFondo');
+            if (popup.style.display === 'none') {
+                popup.style.display = 'block';
+                fondo.style.display = 'block';
+                document.getElementById('anioMsg').textContent = '';
+                db.from('configuracion').select('*').eq('clave', 'footer_year').maybeSingle().then(({ data }) => {
+                    if (data) document.getElementById('anioFooter').value = data.valor;
+                });
+            } else {
+                popup.style.display = 'none';
+                fondo.style.display = 'none';
+            }
+        }
+        function cerrarPopupAnio() {
+            document.getElementById('popupAnio').style.display = 'none';
+            document.getElementById('popupAnioFondo').style.display = 'none';
+        }
+        async function guardarAnio() {
+            const year = document.getElementById('anioFooter').value.trim();
+            const msg = document.getElementById('anioMsg');
+            if (!year || isNaN(year)) { msg.textContent = '❌ Año inválido'; msg.style.color = '#ef4444'; return; }
+            const { error } = await db.from('configuracion').upsert({ clave: 'footer_year', valor: year }, { onConflict: 'clave' });
+            if (error) { msg.textContent = '❌ Error'; msg.style.color = '#ef4444'; }
+            else { msg.textContent = '✅ Año actualizado'; msg.style.color = '#22c55e'; setTimeout(cerrarPopupAnio, 1500); }
+        }
+
+        function getOrdenesOcupadas() {
+            return categorias.map(c => c.orden).filter(o => o !== null && o !== undefined);
+        }
+
+        function getNextDisponible() {
+            const ocupadas = getOrdenesOcupadas();
+            let i = 0;
+            while (ocupadas.includes(i)) i++;
+            return i;
+        }
+
+        function checkOrdenDisponible() {
+            const input = document.getElementById('catOrden');
+            const val = parseInt(input.value);
+            const warning = document.getElementById('ordenWarning');
+            if (isNaN(val)) { warning.style.display = 'none'; return; }
+            if (!editingCategoryId && getOrdenesOcupadas().includes(val)) {
+                const catOcupada = categorias.find(c => c.orden === val);
+                warning.textContent = `⚠️ El orden ${val} ya está ocupado por "${catOcupada?.nombre || 'otra categoría'}"`;
+                warning.style.display = 'block';
+            } else {
+                warning.style.display = 'none';
+            }
+        }
+
+        function ordenSiguiente() {
+            const ocupadas = getOrdenesOcupadas();
+            const actual = parseInt(document.getElementById('catOrden').value) || 0;
+            let next = actual + 1;
+            while (ocupadas.includes(next)) next++;
+            document.getElementById('catOrden').value = next;
+            checkOrdenDisponible();
+        }
+
+        function ordenAnterior() {
+            const ocupadas = getOrdenesOcupadas();
+            const actual = parseInt(document.getElementById('catOrden').value) || 0;
+            if (actual <= 0) return;
+            let prev = actual - 1;
+            while (prev >= 0 && ocupadas.includes(prev)) prev--;
+            if (prev >= 0) {
+                document.getElementById('catOrden').value = prev;
+                checkOrdenDisponible();
+            }
+        }
+
+        function showModalCategoria() {
+            editingCategoryId = null;
+            document.getElementById('categoriaForm').reset();
+            document.getElementById('catIcono').value = '📦';
+            document.getElementById('catOrden').value = getNextDisponible();
+            document.getElementById('ordenWarning').style.display = 'none';
+            document.getElementById('modalCategoriaLabel').textContent = 'Nueva Categoría';
+            document.getElementById('modalCategoria').classList.add('active');
+        }
+
+        function editCategoria(id) {
+            const cat = categorias.find(c => c.id === id);
+            if (!cat) return;
+            editingCategoryId = id;
+            document.getElementById('catNombre').value = cat.nombre;
+            document.getElementById('catIcono').value = cat.icono || '📦';
+            document.getElementById('catOrden').value = cat.orden || 0;
+            document.getElementById('ordenWarning').style.display = 'none';
+            document.getElementById('modalCategoriaLabel').textContent = 'Editar Categoría';
+            document.getElementById('modalCategoria').classList.add('active');
+        }
+
+        function closeModalCategoria() { document.getElementById('modalCategoria').classList.remove('active'); }
+
+        document.addEventListener('click', e => {
+            if (e.target === document.getElementById('modalCategoria')) closeModalCategoria();
+            if (e.target === document.getElementById('modalProducto')) closeModalProducto();
+        });
+
+        function toggleEmojiPicker() {
+            const picker = document.getElementById('emojiPicker');
+            picker.style.display = picker.style.display === 'flex' ? 'none' : 'flex';
+        }
+
+        function selectEmoji(emoji) {
+            document.getElementById('catIcono').value = emoji;
+            document.getElementById('emojiPicker').style.display = 'none';
+        }
+
+        document.addEventListener('click', (e) => {
+            const picker = document.getElementById('emojiPicker');
+            const input = document.getElementById('catIcono');
+            if (picker.style.display === 'flex' && !e.target.closest('.form-group')) {
+                picker.style.display = 'none';
+            }
+        });
+
+        function showToast(mensaje, tipo = 'success', duracion = 3000) {
+            const existente = document.getElementById('toast-flotante');
+            if (existente) existente.remove();
+            const overlayExistente = document.getElementById('toast-overlay');
+            if (overlayExistente) overlayExistente.remove();
+
+            const toast = document.createElement('div');
+            toast.id = 'toast-flotante';
+            toast.innerHTML = `
+                <div style="font-size:1rem;line-height:1.5;">${mensaje}</div>
+            `;
+            toast.style.cssText = `
+                position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+                background: white; padding: 1.5rem; border-radius: 16px;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.3); z-index: 9999;
+                min-width: 300px; max-width: 400px;
+                border-top: 4px solid ${tipo === 'success' ? '#10b981' : tipo === 'error' ? '#ef4444' : '#3b82f6'};
+                animation: fadeIn 0.3s ease;
+            `;
+
+            const overlay = document.createElement('div');
+            overlay.id = 'toast-overlay';
+            overlay.style.cssText = `
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                background: rgba(0,0,0,0.3); z-index: 9998;
+                animation: fadeIn 0.3s ease;
+            `;
+            overlay.onclick = () => { toast.remove(); overlay.remove(); };
+
+            document.body.appendChild(overlay);
+            document.body.appendChild(toast);
+
+            setTimeout(() => { toast.remove(); overlay.remove(); }, duracion);
+        }
+    </script>
+</body>
+</html>
